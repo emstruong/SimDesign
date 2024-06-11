@@ -208,7 +208,7 @@ SimCollect <- function(files = NULL, filename = NULL,
         readin[[i]] <- subset_results(readin[[i]], select=select)
     }
     extra_info1 <- attr(readin[[1L]], 'extra_info')
-    ncores <- sum(sapply(readin, function(x) attr(x, 'extra_info')$ncores))
+    ncores <- sum(sapply(readin, function(x) if (is.null(attr(x, 'extra_info'))) NA else attr(x, 'extra_info')))
     extra_info1[c("seeds", "date_completed", "summarise_list", "stored_results",
                   "total_elapsed_time", "stored_Random.seeds_list")] <- NULL
     errors <- lapply(readin, function(x)
