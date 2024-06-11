@@ -216,16 +216,11 @@ SimCollect <- function(files = NULL, filename = NULL,
     warnings <- lapply(readin, function(x)
         as.data.frame(x[ ,grepl('WARNINGS', colnames(x)), drop=FALSE]))
     nms <- unique(do.call(c, lapply(errors, function(x) colnames(x))))
-<<<<<<< HEAD
-    readin <- lapply(readin, function(x) x[ ,!grepl('ERROR', colnames(x)), drop=FALSE])
-    readin <-lapply(readin, function(x) x[,!grepl('WARNINGS', colnames(x)), drop = FALSE]) # FIXME: Check for compatibility!
-=======
     if(!length(nms)) nms <- 'ERRORS'
     nmsw <- unique(do.call(c, lapply(warnings, function(x) colnames(x))))
     if(!length(nmsw)) nmsw <- 'WARNINGS'
     readin <- lapply(readin, function(x) x[ ,!(
         grepl('ERROR', colnames(x)) | grepl('WARNINGS', colnames(x))), drop=FALSE])
->>>>>>> 0e5e9e579f690ffce4835cf8da36e41efac11bac
     if(length(unique(sapply(readin, ncol))) > 1L)
         stop('Number of columns in the replications not equal')
     designs <- lapply(readin, \(x) SimExtract(x, 'Design'))
@@ -285,8 +280,8 @@ SimCollect <- function(files = NULL, filename = NULL,
             ret[ ,pick] <- ret[ ,pick] + weights[i] * readin[[i]][ ,pick]
             if(has_stored_results & i > 1L){
                 attr(ret, 'extra_info')$stored_results <-
-                rbind(attr(ret, 'extra_info')$stored_results,
-                      attr(readin[[i]], 'extra_info')$stored_results)
+                    rbind(attr(ret, 'extra_info')$stored_results,
+                          attr(readin[[i]], 'extra_info')$stored_results)
             }
         }
         if(has_stored_results)
@@ -306,7 +301,7 @@ SimCollect <- function(files = NULL, filename = NULL,
         out <- do.call(rbind, full_out)
         if(has_stored_results)
             extra_info1$stored_results <- do.call(rbind,
-                            lapply(full_out, \(x) attr(x, 'extra_info')$stored_results))
+                                                  lapply(full_out, \(x) attr(x, 'extra_info')$stored_results))
     }
     if(check.only){
         if(is.null(target.reps)) target.reps <- max(out$REPLICATIONS)
