@@ -37,6 +37,12 @@
 #' @param unname logical; apply \code{\link{unname}} to the results to remove any variable
 #'   names?
 #'
+#' @param center function used to compute the central tendency of the differences when
+#'   aggregating across replications. The default is \code{mean}, but other options such as
+#'   \code{median} or trimmed means (e.g., \code{function(x) mean(x, trim=0.1)}) may be useful
+#'   when dealing with noisy or outlier-prone estimates. The function should accept a numeric
+#'   vector and return a single numeric value.
+#'
 #' @return returns a \code{numeric} vector indicating the overall (relative/standardized)
 #'   bias in the estimates
 #'
@@ -104,13 +110,23 @@
 #' edr <- c(.04, .05, .06, .08)
 #' bias(matrix(edr, 1L), .05, type = 'relative', percent = TRUE)
 #'
+#' # using center = median (more robust to outliers)
+#' set.seed(1234)
+#' pop <- 2
+#' samp_with_outliers <- c(rnorm(95, 2, sd = 0.3), rnorm(5, 10, sd = 1))
+#' bias(samp_with_outliers, pop)  # mean-based (default)
+#' bias(samp_with_outliers, pop, center = median)  # median-based
+#'
+#' # using a trimmed mean (10% trimmed from each tail)
+#' bias(samp_with_outliers, pop, center = function(x) mean(x, trim = 0.1))
+#'
 #'
 bias <- function(estimate, parameter = NULL, type = 'bias', abs = FALSE,
-                 percent = FALSE, unname = FALSE){
+                 percent = FALSE, unname = FALSE, center = mean){
     if(isList(estimate)){
         return(unwind_apply_wind.list(
             lst=estimate, mat=parameter, fun=bias,
-            type=type, abs=abs, percent=percent, unname=unname))
+            type=type, abs=abs, percent=percent, unname=unname, center=center))
     }
 
     if(is.data.frame(estimate)) estimate <- as.matrix(estimate)
@@ -135,10 +151,10 @@ bias <- function(estimate, parameter = NULL, type = 'bias', abs = FALSE,
     if(!equal_len)
         stopifnot(ncol(estimate) == length(parameter))
     diff <- t(t(estimate) - parameter)
-    ret <- if(type == 'relative') rowMeans(t(diff) / parameter)
-        else if(type == 'abs_relative') rowMeans(abs(t(diff) / parameter))
-        else if(type == 'standardized') colMeans(diff) / colSDs(estimate)
-        else colMeans(diff)
+    ret <- if(type == 'relative') apply(t(diff) / parameter, 1L, center)
+        else if(type == 'abs_relative') apply(abs(t(diff) / parameter), 1L, center)
+        else if(type == 'standardized') apply(diff, 2L, center) / colSDs(estimate)
+        else apply(diff, 2L, center)
     if(abs) ret <- abs(ret)
     if(percent){
         ret <- ret * 100
@@ -185,6 +201,13 @@ bias <- function(estimate, parameter = NULL, type = 'bias', abs = FALSE,
 #'
 #' @param unname logical; apply \code{\link{unname}} to the results to remove any variable
 #'   names?
+#'
+#' @param center function used to compute the central tendency when aggregating the squared
+#'   errors across replications. The default is \code{mean}, but other options such as
+#'   \code{median} or trimmed means (e.g., \code{function(x) mean(x, trim=0.1)}) may be useful
+#'   when dealing with noisy or outlier-prone estimates. The function should accept a numeric
+#'   vector and return a single numeric value. Note: when using \code{center = median}, the
+#'   result is technically the root median square error rather than RMSE.
 #'
 #' @return returns a \code{numeric} vector indicating the overall average deviation in the estimates
 #'
@@ -244,12 +267,22 @@ bias <- function(estimate, parameter = NULL, type = 'bias', abs = FALSE,
 #' estimates <- parameters + rnorm(10)
 #' RMSE(estimates, parameters)
 #'
+#' # using center = median (more robust to outliers)
+#' set.seed(1234)
+#' pop <- 1
+#' samp_with_outliers <- c(rnorm(95, 1, sd = 0.3), rnorm(5, 10, sd = 1))
+#' RMSE(samp_with_outliers, pop)  # mean-based (default)
+#' RMSE(samp_with_outliers, pop, center = median)  # median-based
+#'
+#' # using a trimmed mean (10% trimmed from each tail)
+#' RMSE(samp_with_outliers, pop, center = function(x) mean(x, trim = 0.1))
+#'
 RMSE <- function(estimate, parameter = NULL, type = 'RMSE', MSE = FALSE,
-                 percent = FALSE, unname = FALSE){
+                 percent = FALSE, unname = FALSE, center = mean){
     if(isList(estimate)){
         return(unwind_apply_wind.list(
             lst=estimate, mat=parameter, fun=RMSE,
-            type=type, MSE=MSE, percent=percent, unname=unname))
+            type=type, MSE=MSE, percent=percent, unname=unname, center=center))
     }
 
     if(is.data.frame(estimate)) estimate <- as.matrix(estimate)
@@ -264,12 +297,11 @@ RMSE <- function(estimate, parameter = NULL, type = 'RMSE', MSE = FALSE,
     if(is.data.frame(parameter)) parameter <- unlist(parameter)
     stopifnot(is.vector(parameter))
     if(length(parameter) == 1L) parameter <- rep(parameter, n_col)
-    ret <- sapply(1L:ncol(estimate), function(i)
-        sqrt(mean((estimate[,i] - parameter[i])^2)))
     equal_len <- length(estimate) == length(parameter)
     if(!equal_len)
         stopifnot(ncol(estimate) == length(parameter))
-    ret <- sqrt(colMeans(t( (t(estimate) - parameter)^2 )))
+    squared_errors <- t( (t(estimate) - parameter)^2 )
+    ret <- sqrt(apply(squared_errors, 2L, center))
     if(type == 'NRMSE'){
         diff <- apply(estimate, 2, max) - apply(estimate, 2, min)
         ret <- ret / diff
@@ -277,9 +309,10 @@ RMSE <- function(estimate, parameter = NULL, type = 'RMSE', MSE = FALSE,
         diff <- apply(estimate, 2, sd)
         ret <- ret / diff
     } else if(type == 'CV'){
-        ret <- ret / colMeans(estimate)
+        ret <- ret / apply(estimate, 2L, center)
     } else if(type == 'RMSLE'){
-        ret <- sqrt(colMeans(t(t(log(estimate + 1)) - log(parameter + 1))^2))
+        log_squared_errors <- t(t(log(estimate + 1)) - log(parameter + 1))^2
+        ret <- sqrt(apply(log_squared_errors, 2L, center))
     } else if(type != 'RMSE')
         stop('type argument not supported')
     if(MSE) ret <- ret^2
@@ -419,6 +452,13 @@ IRMSE <- function(estimate, parameter, fn, density = function(theta, ...) 1,
 #' @param unname logical; apply \code{\link{unname}} to the results to remove any variable
 #'   names?
 #'
+#' @param center function used to compute the central tendency when aggregating the absolute
+#'   errors across replications. The default is \code{mean}, but other options such as
+#'   \code{median} or trimmed means (e.g., \code{function(x) mean(x, trim=0.1)}) may be useful
+#'   when dealing with noisy or outlier-prone estimates. The function should accept a numeric
+#'   vector and return a single numeric value. Note: when using \code{center = median}, the
+#'   result is technically the median absolute error rather than MAE.
+#'
 #' @return returns a numeric vector indicating the overall mean absolute error in the estimates
 #'
 #' @aliases MAE
@@ -462,12 +502,22 @@ IRMSE <- function(estimate, parameter, fn, density = function(theta, ...) 1,
 #' estimates <- parameters + rnorm(10)
 #' MAE(estimates, parameters)
 #'
+#' # using center = median (more robust to outliers)
+#' set.seed(1234)
+#' pop <- 1
+#' samp_with_outliers <- c(rnorm(95, 1, sd = 0.3), rnorm(5, 10, sd = 1))
+#' MAE(samp_with_outliers, pop)  # mean-based (default)
+#' MAE(samp_with_outliers, pop, center = median)  # median-based
+#'
+#' # using a trimmed mean (10% trimmed from each tail)
+#' MAE(samp_with_outliers, pop, center = function(x) mean(x, trim = 0.1))
+#'
 MAE <- function(estimate, parameter = NULL, type = 'MAE',
-                percent = FALSE, unname = FALSE){
+                percent = FALSE, unname = FALSE, center = mean){
     if(isList(estimate)){
         return(unwind_apply_wind.list(
             lst=estimate, mat=parameter, fun=MAE,
-            type=type, abs=abs, percent=percent, unname=unname))
+            type=type, abs=abs, percent=percent, unname=unname, center=center))
     }
 
     if(is.data.frame(estimate)) estimate <- as.matrix(estimate)
@@ -485,7 +535,8 @@ MAE <- function(estimate, parameter = NULL, type = 'MAE',
     equal_len <- length(estimate) == length(parameter)
     if(!equal_len)
         stopifnot(ncol(estimate) == length(parameter))
-    ret <- colMeans(t(abs(t(estimate) - parameter)))
+    abs_errors <- t(abs(t(estimate) - parameter))
+    ret <- apply(abs_errors, 2L, center)
     if(type == 'NMAE'){
         diff <- apply(estimate, 2, max) - apply(estimate, 2, min)
         ret <- ret / diff
