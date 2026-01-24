@@ -4,72 +4,120 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exporting objects and functions from the workspace • SimDesign</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Exporting objects and functions from the workspace">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Exporting objects and functions from the workspace">
+<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
 </head>
-<body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+<body data-spy="scroll" data-target="#toc">
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <div class="container template-article">
+      <header><div class="navbar navbar- navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <span class="navbar-brand">
+        <a class="navbar-link" href="../index.html">SimDesign</a>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.22</span>
+      </span>
+    </div>
 
-    <a class="navbar-brand me-2" href="../index.html">SimDesign</a>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+<li>
+  <a href="../reference/index.html">Reference</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Articles
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.19.3</small>
-
-
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Catch_errors.html">Managing warning and error messages</a></li>
-    <li><a class="dropdown-item" href="../articles/Fixed_obj_fun.html">Exporting objects and functions from the workspace</a></li>
-    <li><a class="dropdown-item" href="../articles/HPC-computing.html">Distributing jobs for high-performance computing (HPC) clusters (e.g., via Slurm)</a></li>
-    <li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Multiple analysis functions</a></li>
-    <li><a class="dropdown-item" href="../articles/Parallel-computing.html">Parallel computing information</a></li>
-    <li><a class="dropdown-item" href="../articles/Saving-results.html">Saving simulation results and state</a></li>
-    <li><a class="dropdown-item" href="../articles/SimDesign-intro.html">Introduction to the SimDesign package</a></li>
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+<li>
+      <a href="../articles/Catch_errors.html">Managing warning and error messages</a>
+    </li>
+    <li>
+      <a href="../articles/Fixed_obj_fun.html">Exporting objects and functions from the workspace</a>
+    </li>
+    <li>
+      <a href="../articles/HPC-computing.html">Distributing jobs for high-performance computing (HPC) clusters (e.g., via Slurm)</a>
+    </li>
+    <li>
+      <a href="../articles/MultipleAnalyses.html">Multiple analysis functions</a>
+    </li>
+    <li>
+      <a href="../articles/Parallel-computing.html">Parallel computing information</a>
+    </li>
+    <li>
+      <a href="../articles/Saving-results.html">Saving simulation results and state</a>
+    </li>
+    <li>
+      <a href="../articles/SimDesign-intro.html">Introduction to the SimDesign package</a>
+    </li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul>
-<ul class="navbar-nav">
-<li class="nav-item"><form class="form-inline" role="search">
- <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
-</form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/philchalmers/SimDesign/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<ul class="nav navbar-nav navbar-right">
+<li>
+  <a href="https://github.com/philchalmers/SimDesign/" class="external-link">
+    <span class="fab fa-github fa-lg"></span>
+
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <span class="fa fa-sun"></span>
+
+
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+<li class="dropdown-header">Light</li>
+    <li class="dropdown-header">Dark</li>
+    <li class="dropdown-header">Auto</li>
+  </ul>
+</li>
       </ul>
 </div>
-
-
+<!--/.nav-collapse -->
   </div>
-</nav><div class="container template-article">
+<!--/.container -->
+</div>
+<!--/.navbar -->
 
 
 
-
-<div class="row">
-  <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Exporting objects and functions from the workspace</h1>
+      </header><div class="row">
+  <div class="col-md-9 contents">
+    <div class="page-header toc-ignore">
+      <h1 data-toc-skip>Exporting objects and functions from the
+workspace</h1>
                         <h4 data-toc-skip class="author">Phil
 Chalmers</h4>
             
-            <h4 data-toc-skip class="date">2025-05-07</h4>
+            <h4 data-toc-skip class="date">2026-01-24</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/philchalmers/SimDesign/blob/main/vignettes/Fixed_obj_fun.Rmd" class="external-link"><code>vignettes/Fixed_obj_fun.Rmd</code></a></small>
-      <div class="d-none name"><code>Fixed_obj_fun.Rmd</code></div>
+      <div class="hidden name"><code>Fixed_obj_fun.Rmd</code></div>
+
     </div>
 
     
@@ -132,7 +180,54 @@ their Namespace with the <code>::</code> operator (e.g.,
 <code>mvtnorm::rmvtnorm()</code>).</p>
 </div>
 <div class="section level2">
-<h2 id="exporting-objects-example-in-simdesign">Exporting objects example in <code>SimDesign</code><a class="anchor" aria-label="anchor" href="#exporting-objects-example-in-simdesign"></a>
+<h2 id="exporting-functions-for-parallel-computing">Exporting functions for parallel computing<a class="anchor" aria-label="anchor" href="#exporting-functions-for-parallel-computing"></a>
+</h2>
+<div class="section level3">
+<h3 id="exporting-third-party-libraries">Exporting third-party libraries<a class="anchor" aria-label="anchor" href="#exporting-third-party-libraries"></a>
+</h3>
+<p>For simulations that require third-party packages to work correctly
+(e.g., <code>rgumbel()</code> from the <code>extraDistr</code> package)
+there needs to be explicit instructions to indicate which namespace
+these functions originate from. For parallel computing applications
+there are three ways to indicate the namespace of a third-party
+function:</p>
+<ol style="list-style-type: decimal">
+<li>Explicitly attach the package prior to executing the simulation via
+<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> or <code><a href="https://rdrr.io/r/base/library.html" class="external-link">require()</a></code>. This must be done
+prior to using <code><a href="../reference/runSimulation.html">runSimulation()</a></code>
+</li>
+<li>Explicitly pass a character vector containing the packages to be
+attached to <code>runSimulation(..., packages)</code> (e.g.,
+<code>runSimulation(..., packages = c('extraDistr', 'copula'))</code>)</li>
+<li>Point to the function using the <code>::</code> operator (e.g.,
+<code><a href="https://rdrr.io/pkg/extraDistr/man/Gumbel.html" class="external-link">extraDistr::rgumbel()</a></code>)</li>
+</ol>
+<p>For performance and masking related issues it is recommended to only
+export functions that are actually used in the simulation (e.g., attach
+<code>dplyr</code> and <code>tidy</code> explicitly rather than
+attaching the complete <code>tidyverse</code>). Note that 2) is
+technically not required if 1) or 3) is used.</p>
+<p>As a reminder, attaching packages can result in function masking in
+the R session, and therefore in situations were ambiguity exists it is
+recommended to use the <code>::</code> operator explicitly even if these
+were attached. Doing so avoids makes it clear where the function
+originates regardless of the order with which the packages were attached
+to the session.</p>
+</div>
+<div class="section level3">
+<h3 id="exporting-user-defined-functions">Exporting user-defined functions<a class="anchor" aria-label="anchor" href="#exporting-user-defined-functions"></a>
+</h3>
+<p>Exporting user-defined functions explicitly is not required in
+<code>SimDesign</code>. Any previously written function that has been
+defined in the R work space prior to executing
+<code><a href="../reference/runSimulation.html">runSimulation()</a></code> will automatically be exported (again, be
+cognizant of any potential function masking). Other R objects, on the
+other hand, are <em>not</em> explicitly exported. See the next section
+for further details.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="exporting-objects-in-simdesign">Exporting objects in <code>SimDesign</code><a class="anchor" aria-label="anchor" href="#exporting-objects-in-simdesign"></a>
 </h2>
 <p>In order to make objects safely visible in <code>SimDesign</code> the
 strategy is very simple: wrap all desired objects into a named list (or
@@ -140,14 +235,12 @@ other object), and pass this to the <code>fixed_objects</code> argument.
 From here, elements can be indexed using the <code>$</code> operator or
 <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> function, or whatever other method may be
 convenient. Note, however, this is only required for defined
-<em>objects</em> not <em>functions</em> — <code>SimDesign</code>
-automatically makes user-defined functions available across all
-nodes.</p>
+<em>objects</em> not <em>functions</em>.</p>
 <p>As an aside, an alternative approach is simply to define/source the
 objects within the respective <code>SimDesign</code> functions; that way
 they will clearly be visible at run-time. The following
 <code>fixed_objects</code> approach is really only useful when the
-defined objects contain a large amount of code.</p>
+defined objects contain a large amount of code or information.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://philchalmers.github.io/SimDesign/">SimDesign</a></span><span class="op">)</span></span>
 <span><span class="co">#SimFunctions(comments = FALSE)</span></span>
@@ -191,9 +284,9 @@ defined objects contain a large amount of code.</p>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">##       N     p REPLICATIONS SIM_TIME       SEED COMPLETED               </span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span>    10 0.044         <span style="text-decoration: underline;">1</span>000 0.24s     488<span style="text-decoration: underline;">349</span>520 Wed May  7 20:09:16 2025</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span>    20 0.06          <span style="text-decoration: underline;">1</span>000 0.23s     469<span style="text-decoration: underline;">344</span>150 Wed May  7 20:09:17 2025</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span>    30 0.054         <span style="text-decoration: underline;">1</span>000 0.27s    <span style="text-decoration: underline;">1</span>550<span style="text-decoration: underline;">099</span>436 Wed May  7 20:09:17 2025</span></span></code></pre>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span>    10 0.044         <span style="text-decoration: underline;">1</span>000 0.24s     488<span style="text-decoration: underline;">349</span>520 Sat Jan 24 18:47:26 2026</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span>    20 0.06          <span style="text-decoration: underline;">1</span>000 0.23s     469<span style="text-decoration: underline;">344</span>150 Sat Jan 24 18:47:26 2026</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span>    30 0.054         <span style="text-decoration: underline;">1</span>000 0.26s    <span style="text-decoration: underline;">1</span>550<span style="text-decoration: underline;">099</span>436 Sat Jan 24 18:47:26 2026</span></span></code></pre>
 <p>By placing objects in a list and passing this to
 <code>fixed_objects</code>, the objects are safely exported to all
 relevant functions. Furthermore, running this code in parallel will also
@@ -204,24 +297,32 @@ exported to each core.</p>
 <span>                     generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>, summarise<span class="op">=</span><span class="va">Summarise</span>, debug<span class="op">=</span><span class="st">'none'</span>,</span>
 <span>                     parallel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Again, remember that this is only required for R
-<strong>objects</strong>, NOT for user-defined functions!</p>
+<strong>objects</strong>, NOT for user-defined or third-party
+functions!</p>
 </div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside>
-</div>
+  </div>
 
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
+      </div>
 
-    <footer><div class="pkgdown-footer-left">
-  <p>Developed by Phil Chalmers.</p>
-</div>
-
-<div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
 </div>
 
-    </footer>
+
+
+      <footer><div class="copyright">
+  <p></p>
+<p>Developed by Phil Chalmers, Mikko Rönkkö.</p>
 </div>
+
+<div class="pkgdown">
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+</div>
+
+      </footer>
+</div>
+
 
 
 
