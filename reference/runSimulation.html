@@ -30,7 +30,7 @@ must be passed to the fixed_objects input to become available across nodes)."><!
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">SimDesign</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.22</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.25</span>
       </span>
     </div>
 
@@ -168,9 +168,14 @@ must be passed to the <code>fixed_objects</code> input to become available acros
 
 <dl><dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
 <dd><p>a <code>tibble</code> or <code>data.frame</code> object containing the Monte Carlo simulation
-conditions to be studied, where each row represents a unique condition and each column a factor
-to be varied. See <code><a href="createDesign.html">createDesign</a></code> for the standard approach
-to create this simulation design object</p></dd>
+  conditions to be studied, where each row represents a unique condition and each column a factor
+  to be varied. See <code><a href="createDesign.html">createDesign</a></code> for the standard approach
+  to create this simulation design object</p>
+<p>As an augmentation of the input, the original <code>design</code> object can be passed to
+  <code><a href="expandDesign.html">expandDesign</a></code> to systemically repeat the rows of each simulation condition,
+  allowing smaller numbers of <code>replications</code> to be supplied per condition. After this
+  distributed job is complete the function <code><a href="SimCollect.html">SimCollect</a></code> can be used to recombine
+  the results to a form commensurate with the original <code>design</code> object</p></dd>
 
 
 <dt id="arg-replications">replications<a class="anchor" aria-label="anchor" href="#arg-replications"></a></dt>
@@ -216,7 +221,7 @@ analyse the simulated data). See <code><a href="Analyse.html">Analyse</a></code>
   <code>store_results = TRUE</code> or <code>save_results = TRUE</code> were included).</p>
 <p>Omitting this function will return a tibble with the <code>Design</code>
   and associated results information for all
-  <code>nrow(Design) * repliations</code> evaluations if the results from each
+  <code>nrow(Design) * replications</code> evaluations if the results from each
   <code><a href="Analyse.html">Analyse()</a></code> call was a one-dimensional vector.
   For more general objects returned by <code><a href="Analyse.html">Analyse()</a></code>
   (such as <code>list</code>s), a <code>list</code>
@@ -255,7 +260,7 @@ analyse the simulated data). See <code><a href="Analyse.html">Analyse</a></code>
 <p><code>  fixed_objects</code></p>
 <p><code>}</code></p>
 <p>This approach allows you to: (1) pre-generate expensive condition-specific objects
-  prior to running the simulation , (2) save them as individual
+  prior to running the simulation, (2) save them as individual
   RDS files, and (3) load them efficiently during the simulation. This is preferable to
   generating objects within <code>prepare()</code> itself because it allows you to inspect the
   objects, ensures reproducibility, and separates object generation from the simulation workflow.</p>
@@ -349,8 +354,8 @@ primarily useful for debugging purposes.
   E.g., <code>load_seed = 'design-row-2/seed-1'</code>
   will load the first seed in the second row of the <code>design</code> input, or
   explicitly passing the
-  elements from <code>.Random.seed</code> (see <code><a href="SimExtract.html">SimExtract</a></code> to extract
-  the seeds associated explicitly
+  elements from <code>.Random.seed</code> (see <code><a href="SimExtract.html">SimExtract</a></code>
+  or <code><a href="SimErrors.html">SimErrors</a></code> to extract  the seeds associated explicitly
   with errors during the simulation, where each column represents a unique seed).
   If the input is a character vector then it is important NOT
   to modify the <code>design</code> input object, otherwise the path may not point
@@ -372,7 +377,8 @@ extracted using <code>SimExtract(res, 'prepare_error_seed')</code>. Default is <
 
 
 <dt id="arg-save">save<a class="anchor" aria-label="anchor" href="#arg-save"></a></dt>
-<dd><p>logical; save the temporary simulation state to the hard-drive? This is useful
+<dd><p>logical; save the temporary simulation state to the hard-drive using
+  <code><a href="https://rdrr.io/pkg/qs2/man/qd_save.html" class="external-link">qs2::qd_save()</a></code>? This is useful
   for simulations which require an extended amount of time, though for shorter simulations
   can be disabled to slightly improve computational efficiency. When <code>TRUE</code>,
   which is the default when evaluating <code>replications &gt; 2</code>, a temp file
@@ -385,7 +391,8 @@ extracted using <code>SimExtract(res, 'prepare_error_seed')</code>. Default is <
 <p>To recover your simulation at the last known location (having patched the issues in the
   previous execution code) simply re-run the code you used to
   initially define the simulation and the external file will automatically be detected and read-in.
-  Default is <code>TRUE</code> when <code>replications &gt; 10</code> and <code>FALSE</code> otherwise</p></dd>
+  Default is <code>TRUE</code> when <code>replications &gt; 10</code> and <code>FALSE</code> otherwise.
+  See also <code><a href="SimRead.html">SimRead</a></code> to read and inspect the stored files</p></dd>
 
 
 <dt id="arg-store-results">store_results<a class="anchor" aria-label="anchor" href="#arg-store-results"></a></dt>
@@ -410,7 +417,8 @@ extracted using <code>SimExtract(res, 'prepare_error_seed')</code>. Default is <
   Each saved object will contain a list of three elements containing the
   condition (row from <code>design</code>),
   results (as a <code>list</code> or <code>matrix</code>), and try-errors.
-  See <code><a href="SimResults.html">SimResults</a></code> for an example of how to read these <code>.rds</code> files back into R
+  See <code><a href="SimResults.html">SimResults</a></code> and <code><a href="SimRead.html">SimRead</a></code>
+  for an example of how to read these <code>.rds</code> files back into R
   after the simulation is complete. Default is <code>FALSE</code>.</p>
 <p>WARNING: saving results to your hard-drive can fill up space very quickly for
   larger simulations. Be sure to
@@ -576,7 +584,7 @@ in the simulation</p></dd>
       in the current working directory then a unique one will be created automatically. Default is
       <code>'SimDesign-results_'</code> with the associated <code>compname</code> appended if no
       <code>filename</code> is defined, otherwise the filename is used to replace 'SimDesign'
-      in the string</p></dd>
+      in the string. See <code><a href="SimRead.html">SimRead</a></code> to read in the individual files</p></dd>
 
 
     <dt><code>save_results_filename</code></dt>
@@ -589,7 +597,8 @@ in the simulation</p></dd>
       for HPC structures that allow asynchronous file storage).
       WARNING: the uniqueness of the file names are not checked using
       this approach, therefore please ensure that each generated name will be unique a priori,
-      such as naming the file based on the supplied row condition information</p></dd>
+      such as naming the file based on the supplied row condition information.
+      See <code><a href="SimRead.html">SimRead</a></code> to read in the individual files</p></dd>
 
 
     <dt><code>save_seeds_dirname</code></dt>
@@ -604,8 +613,9 @@ in the simulation</p></dd>
 
       <dt><code>tmpfilename</code></dt>
 <dd><p>string indicating the temporary file name to save
-        provisional information to. If not specified the following will be used:
-        <code>paste0('SIMDESIGN-TEMPFILE_', compname, '.rds')</code></p></dd>
+        provisional information to using the <code>qs2</code> format.
+        If not specified the following will be used:
+        <code>paste0('SIMDESIGN-TEMPFILE_', compname)</code></p></dd>
 
 
 
@@ -615,7 +625,13 @@ in the simulation</p></dd>
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
 <dd><p>a list for extra information flags for controlling less
   commonly used features. These include</p>
-<p></p><dl><dt><code>stop_on_fatal</code></dt>
+<p></p><dl><dt><code>use_mirai</code></dt>
+<dd><p>logical (default is <code>TRUE</code>); when defining the <code>cl</code>
+      object internally, should the cluster object be built using <code>mirai</code> or <code>parallel</code>?
+      Set this to <code>FALSE</code> for parallel behavior prior to <code>SimDesign</code> version 2.25</p></dd>
+
+
+    <dt><code>stop_on_fatal</code></dt>
 <dd><p>logical (default is <code>FALSE</code>); should the simulation be
       terminated immediately when
       the maximum number of consecutive errors (<code>max_errors</code>) is reached? If <code>FALSE</code>,
@@ -636,6 +652,14 @@ in the simulation</p></dd>
      stages when designing a simulation experiment. If specific warnings are known to
      be problematic and should be treated as errors then please use
      <code><a href="manageWarnings.html">manageWarnings</a></code> instead</p></dd>
+
+
+     <dt><code>logging</code></dt>
+<dd><p>a character vector indicating whether the execution times for the
+       generate and analyse functions should be logged. Values can be <code>'store'</code> to store the times
+       (and later extract using <code><a href="SimExtract.html">SimExtract</a></code>) or <code>'verbose'</code> to both store and
+       print the times via <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></code>
+       for <code>stdout</code> piping (useful on cluster computing)</p></dd>
 
 
      <dt><code>save_seeds</code></dt>
@@ -824,7 +848,7 @@ relevant when L'Ecuyer-CMRG method used), and, if applicable,
 <code>ERRORS</code> and <code>WARNINGS</code> which contain counts for the number of error or warning
 messages that were caught (if no errors/warnings were observed these columns will be omitted).
 Note that to extract the specific error and warnings messages see
-<code><a href="SimExtract.html">SimExtract</a></code>. Finally,
+<code><a href="SimErrors.html">SimErrors</a></code> and <code><a href="SimWarnings.html">SimWarnings</a></code>. Finally,
 if <code>boot_method</code> was a valid input other than 'none' then the final right-most
 columns will contain the labels
 <code>BOOT_</code> followed by the name of the associated meta-statistic defined in <code><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise()</a></code> and
@@ -845,8 +869,8 @@ simulation experiments, as well as the various vignette files associated with th
 <dl><dt>1)</dt>
 <dd><p>Define a suitable <code>Design</code> object (a <code>tibble</code> or <code>data.frame</code>)
       containing fixed conditional
-      information about the Monte Carlo simulations. Each row or this <code>design</code> object pertains
-      to a unique set of simulation to study, while each column the simulation factor under
+      information about the Monte Carlo simulations. Each row of this <code>design</code> object pertains
+      to a unique set of simulation conditions to study, while each column the simulation factor under
       investigation (e.g., sample size,
       distribution types, etc). This is often expedited by using the
       <code><a href="createDesign.html">createDesign</a></code> function, and if necessary the argument <code>subset</code>
@@ -925,7 +949,7 @@ individual <code>.Random.seed</code> terms can then be read in with the
 Most often though, saving the complete list of seeds is unnecessary as problematic seeds are
 automatically stored in the final simulation object to allow for easier replicability
 of potentially problematic errors (which incidentally can be extracted
-using <code>SimExtract(res, 'error_seeds')</code> and passed to the <code>load_seed</code> argument). Finally,
+from <code>SimErrors(res, seeds=TRUE)</code> and passed to the <code>load_seed</code> argument). Finally,
 providing a vector of <code>seeds</code> is also possible to ensure
 that each simulation condition is macro reproducible under the single/multi-core method selected.</p>
 <p>Finally, when the Monte Carlo simulation is complete
@@ -945,7 +969,7 @@ common) mistakes during the process of designing and executing Monte Carlo simul
 <p>In the event of a computer crash, power outage, etc, if <code>save = TRUE</code> was used (the default)
 then the original code used to execute <code>runSimulation()</code> need only be re-run to resume
 the simulation. The saved temp file will be read into the function automatically, and the
-simulation will continue one the condition where it left off before the simulation
+simulation will continue at the condition where it left off before the simulation
 state was terminated. If users wish to remove this temporary
 simulation state entirely so as to start anew then simply pass <code>SimClean(temp = TRUE)</code>
 in the R console to remove any previously saved temporary objects.</p>
@@ -960,7 +984,7 @@ or when using the <code><a href="https://future.futureverse.org/reference/future
 R objects defined in the global environment will generally <em>not</em> be visible across nodes.
 Hence, you may see errors such as <code>Error: object 'something' not found</code> if you try to use
 an object that is defined in the work space but is not passed to <code>runSimulation</code>.
-To avoid this type or error, simply pass additional objects to the
+To avoid this type of error, simply pass additional objects to the
 <code>fixed_objects</code> input (usually it's convenient to supply a named list of these objects).
 Fortunately, however, <em>custom functions defined in the global environment are exported across
 nodes automatically</em>. This makes it convenient when writing code because custom functions will
@@ -981,9 +1005,9 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
     <h2>See also</h2>
     <div class="dont-index"><p><code><a href="SimFunctions.html">SimFunctions</a></code>, <code><a href="createDesign.html">createDesign</a></code>,
   <code><a href="Generate.html">Generate</a></code>, <code><a href="Analyse.html">Analyse</a></code>, <code><a href="Summarise.html">Summarise</a></code>,
-  <code><a href="SimExtract.html">SimExtract</a></code>,
+  <code><a href="SimErrors.html">SimErrors</a></code>, <code><a href="SimWarnings.html">SimWarnings</a></code>, <code><a href="SimExtract.html">SimExtract</a></code>,
   <code><a href="reSummarise.html">reSummarise</a></code>, <code><a href="SimClean.html">SimClean</a></code>, <code><a href="SimAnova.html">SimAnova</a></code>, <code><a href="SimResults.html">SimResults</a></code>,
-  <code><a href="SimCollect.html">SimCollect</a></code>, <code><a href="Attach.html">Attach</a></code>, <code><a href="AnalyseIf.html">AnalyseIf</a></code>,
+  <code><a href="SimCollect.html">SimCollect</a></code>, <code><a href="SimRead.html">SimRead</a></code>, <code><a href="Attach.html">Attach</a></code>, <code><a href="AnalyseIf.html">AnalyseIf</a></code>,
   <code><a href="SimShiny.html">SimShiny</a></code>, <code><a href="manageWarnings.html">manageWarnings</a></code>, <code><a href="runArraySimulation.html">runArraySimulation</a></code></p></div>
     </div>
     <div id="author">
@@ -1070,49 +1094,64 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-in"><span>                       generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>, summarise<span class="op">=</span><span class="va">Summarise</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">Final</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 7</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       N      mu       SE REPLICATIONS SIM_TIME       SEED COMPLETED             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.795  0.945<span style="text-decoration: underline;">30</span>             2 0.00s     861<span style="text-decoration: underline;">587</span>564 Sat Jan 24 18:47:13 2…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.346  0.646<span style="text-decoration: underline;">85</span>             2 0.00s    <span style="text-decoration: underline;">1</span>349<span style="text-decoration: underline;">546</span>859 Sat Jan 24 18:47:13 2…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30  9.926<span style="text-decoration: underline;">6</span> 0.091<span style="text-decoration: underline;">657</span>            2 0.00s    <span style="text-decoration: underline;">1</span>903<span style="text-decoration: underline;">890</span>182 Sat Jan 24 18:47:13 2…</span>
-<span class="r-in"><span><span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.202  1.472<span style="text-decoration: underline;">9</span>             2 0.00s     533<span style="text-decoration: underline;">810</span>122 Tue Apr 28 12:49:22 20…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.885  0.318<span style="text-decoration: underline;">64</span>            2 0.00s    <span style="text-decoration: underline;">1</span>340<span style="text-decoration: underline;">659</span>367 Tue Apr 28 12:49:22 20…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30  9.626<span style="text-decoration: underline;">8</span> 1.254<span style="text-decoration: underline;">8</span>             2 0.00s     881<span style="text-decoration: underline;">068</span>069 Tue Apr 28 12:49:22 20…</span>
+<span class="r-in"><span><span class="op">(</span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 2</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       N  mean</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 11.5 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    10 10.1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    20 10.8 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>    20  9.89</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>    30  9.99</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>    30  9.86</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 11.2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    10  9.16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    20 10.7 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>    20 11.1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>    30 10.5 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>    30  8.74</span>
+<span class="r-in"><span><span class="va">results</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="descript.html">descript</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 12</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       N     n  mean  trim    sd      skew  kurt   min   P25   P50   P75   max</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10     2 10.2  10.2  1.47   0   <span style="color: #949494;"> </span>    -<span style="color: #BB0000;">2.75</span>  9.16  9.68 10.2   10.7  11.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20     2 10.9  10.9  0.319  4.16<span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span> -<span style="color: #BB0000;">2.75</span> 10.7  10.8  10.9   11.0  11.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30     2  9.63  9.63 1.25  -<span style="color: #BB0000;">1.10</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span> -<span style="color: #BB0000;">2.75</span>  8.74  9.18  9.63  10.1  10.5</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># reproduce exact simulation</span></span></span>
 <span class="r-in"><span><span class="va">Final_rep</span> <span class="op">&lt;-</span> <span class="fu">runSimulation</span><span class="op">(</span>design<span class="op">=</span><span class="va">Design</span>, replications<span class="op">=</span><span class="fl">2</span>, seed<span class="op">=</span><span class="va">Final</span><span class="op">$</span><span class="va">SEED</span>,</span></span>
 <span class="r-in"><span>                       generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>, summarise<span class="op">=</span><span class="va">Summarise</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">Final_rep</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 7</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       N      mu       SE REPLICATIONS SIM_TIME       SEED COMPLETED             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.795  0.945<span style="text-decoration: underline;">30</span>             2 0.00s     861<span style="text-decoration: underline;">587</span>564 Sat Jan 24 18:47:13 2…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.346  0.646<span style="text-decoration: underline;">85</span>             2 0.00s    <span style="text-decoration: underline;">1</span>349<span style="text-decoration: underline;">546</span>859 Sat Jan 24 18:47:13 2…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30  9.926<span style="text-decoration: underline;">6</span> 0.091<span style="text-decoration: underline;">657</span>            2 0.00s    <span style="text-decoration: underline;">1</span>903<span style="text-decoration: underline;">890</span>182 Sat Jan 24 18:47:13 2…</span>
-<span class="r-in"><span><span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final_rep</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.202  1.472<span style="text-decoration: underline;">9</span>             2 0.00s     533<span style="text-decoration: underline;">810</span>122 Tue Apr 28 12:49:22 20…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.885  0.318<span style="text-decoration: underline;">64</span>            2 0.00s    <span style="text-decoration: underline;">1</span>340<span style="text-decoration: underline;">659</span>367 Tue Apr 28 12:49:22 20…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30  9.626<span style="text-decoration: underline;">8</span> 1.254<span style="text-decoration: underline;">8</span>             2 0.00s     881<span style="text-decoration: underline;">068</span>069 Tue Apr 28 12:49:22 20…</span>
+<span class="r-in"><span><span class="op">(</span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final_rep</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 2</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       N  mean</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 11.5 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    10 10.1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    20 10.8 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>    20  9.89</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>    30  9.99</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>    30  9.86</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 11.2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    10  9.16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    20 10.7 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>    20 11.1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>    30 10.5 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>    30  8.74</span>
+<span class="r-in"><span><span class="va">results</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="descript.html">descript</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 12</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       N     n  mean  trim    sd      skew  kurt   min   P25   P50   P75   max</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10     2 10.2  10.2  1.47   0   <span style="color: #949494;"> </span>    -<span style="color: #BB0000;">2.75</span>  9.16  9.68 10.2   10.7  11.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20     2 10.9  10.9  0.319  4.16<span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span> -<span style="color: #BB0000;">2.75</span> 10.7  10.8  10.9   11.0  11.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30     2  9.63  9.63 1.25  -<span style="color: #BB0000;">1.10</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span> -<span style="color: #BB0000;">2.75</span>  8.74  9.18  9.63  10.1  10.5</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># run with more standard number of replications</span></span></span>
 <span class="r-in"><span><span class="va">Final</span> <span class="op">&lt;-</span> <span class="fu">runSimulation</span><span class="op">(</span>design<span class="op">=</span><span class="va">Design</span>, replications<span class="op">=</span><span class="fl">1000</span>,</span></span>
 <span class="r-in"><span>                       generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>, summarise<span class="op">=</span><span class="va">Summarise</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">Final</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">(</span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">Final</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">results</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="descript.html">descript</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#~~~~~~~~~~~~~~~~~~~~~~~~</span></span></span>
 <span class="r-in"><span><span class="co">#### Extras</span></span></span>
@@ -1279,16 +1318,16 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 36 × 9</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    sample_size group_size_ratio standard_deviation_ratio welch independent</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>          30                1                      0.5   0.5         0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>          30                1                      0.5   0           0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>          60                1                      0.5   0           0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>          90                1                      0.5   0           0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>         120                1                      0.5   0           0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>          30                4                      0.5   0           0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>          60                4                      0.5   0           0  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>          30                4                      0.5   0.5         0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>          60                4                      0.5   0           0.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>          90                4                      0.5   0           0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>         120                4                      0.5   0           0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>          30                8                      0.5   0           0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>          60                8                      0.5   0           0  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>          30                8                      0.5   0           0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>          60                8                      0.5   0           0.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 26 more rows</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: REPLICATIONS &lt;dbl&gt;, SIM_TIME &lt;chr&gt;, SEED &lt;int&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   COMPLETED &lt;chr&gt;</span></span>
@@ -1414,24 +1453,29 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 2</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   `mean(welch)` `mean(independent)`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0.013<span style="text-decoration: underline;">9</span>              0.013<span style="text-decoration: underline;">9</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0.055<span style="text-decoration: underline;">6</span>              0.083<span style="text-decoration: underline;">3</span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">standard_deviation_ratio</span>, <span class="va">group_size_ratio</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span></span>
 <span class="r-in"><span>   <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">welch</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">independent</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> `summarise()` has grouped output by 'standard_deviation_ratio'. You can</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> override using the `.groups` argument.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> `summarise()` has regrouped the output.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Summaries were computed grouped by <span style="color: #0000BB;">standard_deviation_ratio</span> and</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   <span style="color: #0000BB;">group_size_ratio</span>.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Output is grouped by <span style="color: #0000BB;">standard_deviation_ratio</span>.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Use `summarise(.groups = "drop_last")` to silence this message.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Use `summarise(.by = c(standard_deviation_ratio, group_size_ratio))` for</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   per-operation grouping (`?dplyr::dplyr_by`) instead.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 9 × 4</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># Groups:   standard_deviation_ratio [3]</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   standard_deviation_ratio group_size_ratio `mean(welch)` `mean(independent)`</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>                      0.5                1         0.125               0.125</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>                      0.5                4         0                   0    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>                      0.5                8         0                   0    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>                      0.5                1         0                   0    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>                      0.5                4         0.125               0.25 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>                      0.5                8         0                   0.375</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>                      1                  1         0                   0    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>                      1                  4         0                   0    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>                      1                  8         0                   0    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>                      1                  4         0                   0.125</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>                      1                  8         0.125               0    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span>                      2                  1         0                   0    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span>                      2                  4         0                   0    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">9</span>                      2                  8         0                   0    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span>                      2                  4         0.125               0    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">9</span>                      2                  8         0.125               0    </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># quick ANOVA analysis method with all two-way interactions</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="SimAnova.html">SimAnova</a></span><span class="op">(</span> <span class="op">~</span> <span class="op">(</span><span class="va">sample_size</span> <span class="op">+</span> <span class="va">group_size_ratio</span> <span class="op">+</span> <span class="va">standard_deviation_ratio</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span>, <span class="va">res</span>,</span></span>
@@ -1497,16 +1541,16 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 72 × 4</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    group_size_ratio standard_deviation_ratio stats       value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>                1                      0.5 welch         0.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>                1                      0.5 independent   0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>                1                      0.5 welch         0  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>                1                      0.5 independent   0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>                1                      0.5 welch         0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>                1                      0.5 independent   0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>                1                      0.5 welch         0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>                1                      0.5 independent   0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>                1                      0.5 welch         0  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>                1                      0.5 independent   0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>                4                      0.5 welch         0  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>                4                      0.5 independent   0  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>                4                      0.5 welch         0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>                4                      0.5 independent   0.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 62 more rows</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">dd</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">group_size_ratio</span><span class="op">)</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_boxplot.html" class="external-link">geom_boxplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
