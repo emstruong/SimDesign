@@ -153,6 +153,7 @@ for Industrial & Applied Mathematics (SIAM), 51, 2261-2279.
 ## Examples
 
 ``` r
+
 # find x that solves f(x) - b = 0 for the following
 f.root <- function(x, b = .6) 1 / (1 + exp(-x)) - b
 f.root(.3)
@@ -192,7 +193,7 @@ retpba
 #> [1] TRUE
 #> 
 #> $time
-#> [1] 0.13s
+#> [1] 0.23s
 #> 
 #> $iterations
 #> [1] 172
@@ -230,7 +231,7 @@ retpba.noise
 #> [1] TRUE
 #> 
 #> $time
-#> [1] 0.10s
+#> [1] 0.09s
 #> 
 #> $iterations
 #> [1] 138

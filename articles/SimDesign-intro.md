@@ -29,10 +29,10 @@ major components:
   given various **design** conditions to be studied (e.g., sample size,
   distributions, group sizes, etc),
 - **analyse** the generated data using whatever statistical analyses you
-  are interested in (e.g., $t$-test, ANOVA, SEMs, IRT, etc), and collect
-  the statistics/CIs/$p$-values/parameter estimates you are interested
-  in, and
-- **summarise** the results after repeating the simulations $R$ number
+  are interested in (e.g., $`t`$-test, ANOVA, SEMs, IRT, etc), and
+  collect the statistics/CIs/$`p`$-values/parameter estimates you are
+  interested in, and
+- **summarise** the results after repeating the simulations $`R`$ number
   of times to obtain empirical estimates of the population’s behavior.
 
 Each operation above represents the essential components of the
@@ -60,6 +60,7 @@ To begin, the following code should be copied and saved to an external
 source (i.e., text) file.
 
 ``` r
+
 library(SimDesign)
 SimFunctions()
 ```
@@ -103,6 +104,7 @@ design/execution and required user-defined functions. For Rstudio users,
 this will also automatically open up the file in a new coding window.
 
 ``` r
+
 SimDesign::SimFunctions('mysim')
 ```
 
@@ -111,6 +113,7 @@ prefer to have helpful comments included then these can be achieved with
 the `singlefile` and `comments` arguments, respectively.
 
 ``` r
+
 SimFunctions('mysim', singlefile = FALSE, comments = TRUE)
 ```
 
@@ -130,7 +133,7 @@ As a toy example, let’s consider how the following investigation using
 
 *Question*: How does trimming affect recovering the mean of a
 distribution? Investigate this using different sample sizes with
-Gaussian and $\chi^{2}$ distributions. Also, demonstrate the effect of
+Gaussian and $`\chi^2`$ distributions. Also, demonstrate the effect of
 using the median to recover the mean.
 
 ### Define the conditions
@@ -143,6 +146,7 @@ is required to create a completely crossed-design for each combination
 (there are 8 in total).
 
 ``` r
+
 Design <- createDesign(sample_size = c(30, 60, 120, 240), 
                        distribution = c('norm', 'chi'))
 Design
@@ -162,7 +166,7 @@ Design
 
 Each row in `Design` represents a unique condition to be studied in the
 simulation. In this case, the first condition to be studied comes from
-row 1, where $N = 30$ and the distribution is from the Gaussian/normal
+row 1, where $`N=30`$ and the distribution is from the Gaussian/normal
 family.
 
 ### Define the functions
@@ -176,6 +180,7 @@ fixed sets of population parameters and other conditions, however for
 this simple simulation this input is not required.
 
 ``` r
+
 Generate <- function(condition, fixed_objects) {
     N <- condition$sample_size
     dist <- condition$distribution
@@ -190,12 +195,13 @@ Generate <- function(condition, fixed_objects) {
 
 As we can see above,
 [`Generate()`](http://philchalmers.github.io/SimDesign/reference/Generate.md)
-will return a numeric vector of length $N$ containing the data to be
-analysed, each with a population mean of 3 (because a $\chi^{2}$
+will return a numeric vector of length $`N`$ containing the data to be
+analysed, each with a population mean of 3 (because a $`\chi^2`$
 distribution has a mean equal to its df). Next, we define the `analyse`
 component to analyse said data:
 
 ``` r
+
 Analyse <- function(condition, dat, fixed_objects) {
     M0 <- mean(dat)
     M1 <- mean(dat, trim = .1)
@@ -215,10 +221,10 @@ the row-conditions, however it will often make conceptual sense to do
 so.
 
 At this point, we may conceptually think of the first two functions as
-being evaluated independently $R$ times to obtain $R$ sets of results.
-In other words, if we wanted the number of replications to be 100, the
-first two functions would be independently run (at least) 100 times, the
-results from
+being evaluated independently $`R`$ times to obtain $`R`$ sets of
+results. In other words, if we wanted the number of replications to be
+100, the first two functions would be independently run (at least) 100
+times, the results from
 [`Analyse()`](http://philchalmers.github.io/SimDesign/reference/Analyse.md)
 would be stored, and we would then need to summarise these 100 elements
 into meaningful meta statistics to describe their empirical properties.
@@ -227,6 +233,7 @@ error, detection rates, and so on are of primary importance.
 Unsurprisingly, then, this is the purpose of the `summarise` component:
 
 ``` r
+
 Summarise <- function(condition, results, fixed_objects) {
     obs_bias <- bias(results, parameter = 3)
     obs_RMSE <- RMSE(results, parameter = 3)
@@ -244,7 +251,7 @@ single vector returned by
 [`Analyse()`](http://philchalmers.github.io/SimDesign/reference/Analyse.md).
 
 That sounds much more complicated than it is — all you really need to
-know for this simulation is that an $R$ x 4 matrix called `results` is
+know for this simulation is that an $`R`$ x 4 matrix called `results` is
 available to build a suitable summary from. Because the results is a
 matrix, [`apply()`](https://rdrr.io/r/base/apply.html) is useful to
 apply a function over each respective row. The bias and RMSE are
@@ -275,6 +282,7 @@ on a single processor, and finally store the results to an object called
 `res`.
 
 ``` r
+
 res <- runSimulation(Design, replications = 1000, generate=Generate, 
                          analyse=Analyse, summarise=Summarise)
 
@@ -304,6 +312,7 @@ current default in the package if RAM is not an issue, then the complete
 stored results can be viewed using
 
 ``` r
+
 # Extract complete set of stored results
 results <- SimResults(res)
 results
@@ -342,6 +351,7 @@ and verbs from the `dplyr` package to get a better understanding of the
 distributions.
 
 ``` r
+
 # summary statistics for complete results
 descript(results)
 ```
@@ -356,104 +366,77 @@ descript(results)
     ## 5 medi…  8000   2.69   2.71  0.402 -0.440 -0.498  1.05  2.36  2.81   3.01   4.16
 
 ``` r
+
 # conditional summary statistics using dplyr verbs
 results |> group_by(sample_size, distribution) |> 
     descript()
 ```
 
-    ## sample_size: 30
-    ## distribution: chi
-    ## # A tibble: 4 × 12
-    ##   VARS           n  mean  trim    sd  skew    kurt   min   P25   P50   P75   max
-    ##   <fct>      <dbl> <dbl> <dbl> <dbl> <dbl>   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_t…  1000  3.02  3.02 0.447 0.149 -0.117   1.86  2.71  3.02  3.31  4.63
-    ## 2 mean_trim…  1000  2.70  2.69 0.419 0.170 -0.102   1.50  2.42  2.69  2.96  4.25
-    ## 3 mean_trim…  1000  2.56  2.55 0.423 0.215 -0.0328  1.38  2.27  2.54  2.83  4.23
-    ## 4 median      1000  2.42  2.41 0.476 0.375  0.313   1.05  2.10  2.38  2.74  4.16
+    ## VARIABLE: mean_no_trim
+    ## 
+    ## # A tibble: 8 × 13
+    ##   sample_size distribution     n  mean  trim     sd   skew    kurt   min   P25
+    ##         <dbl> <chr>        <dbl> <dbl> <dbl>  <dbl>  <dbl>   <dbl> <dbl> <dbl>
+    ## 1          30 chi           1000  3.02  3.02 0.447  0.149  -0.117   1.86  2.71
+    ## 2          30 norm          1000  3.00  2.99 0.319  0.296   0.108   2.19  2.78
+    ## 3          60 chi           1000  2.99  2.99 0.224  0.213  -0.0319  2.34  2.84
+    ## 4          60 norm          1000  3.00  3.00 0.158  0.0822  0.0561  2.47  2.89
+    ## 5         120 chi           1000  3.00  2.99 0.185  0.0458  0.0342  2.36  2.87
+    ## 6         120 norm          1000  3.00  3.00 0.125  0.118   0.326   2.59  2.92
+    ## 7         240 chi           1000  3.00  3.00 0.0908 0.0590  0.0322  2.72  2.94
+    ## 8         240 norm          1000  3.00  3.00 0.0643 0.0745 -0.189   2.81  2.96
+    ## # ℹ 3 more variables: P50 <dbl>, P75 <dbl>, max <dbl>
     ## 
     ## ------------------------------------------------------------
     ##  
-    ## sample_size: 60
-    ## distribution: chi
-    ## # A tibble: 4 × 12
-    ##   VARS             n  mean  trim    sd  skew  kurt   min   P25   P50   P75   max
-    ##   <fct>        <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_trim  1000  3.00  2.99 0.319 0.296 0.108  2.19  2.78  2.98  3.20  4.14
-    ## 2 mean_trim.1   1000  2.65  2.64 0.295 0.368 0.363  1.92  2.45  2.64  2.84  3.96
-    ## 3 mean_trim.2   1000  2.51  2.50 0.293 0.378 0.437  1.78  2.30  2.50  2.69  3.81
-    ## 4 median        1000  2.36  2.35 0.335 0.409 0.484  1.32  2.13  2.34  2.56  3.77
+    ## VARIABLE: mean_trim.1
+    ## 
+    ## # A tibble: 8 × 13
+    ##   sample_size distribution     n  mean  trim     sd   skew    kurt   min   P25
+    ##         <dbl> <chr>        <dbl> <dbl> <dbl>  <dbl>  <dbl>   <dbl> <dbl> <dbl>
+    ## 1          30 chi           1000  2.70  2.69 0.419  0.170  -0.102   1.50  2.42
+    ## 2          30 norm          1000  2.65  2.64 0.295  0.368   0.363   1.92  2.45
+    ## 3          60 chi           1000  2.65  2.65 0.214  0.159  -0.130   2.07  2.51
+    ## 4          60 norm          1000  2.65  2.65 0.148  0.0650  0.0595  2.10  2.55
+    ## 5         120 chi           1000  3.00  2.99 0.190  0.0408  0.0225  2.42  2.86
+    ## 6         120 norm          1000  3.00  3.00 0.129  0.130   0.261   2.61  2.92
+    ## 7         240 chi           1000  3.00  3.00 0.0940 0.0884  0.0161  2.69  2.94
+    ## 8         240 norm          1000  3.00  3.00 0.0659 0.0892 -0.161   2.80  2.95
+    ## # ℹ 3 more variables: P50 <dbl>, P75 <dbl>, max <dbl>
     ## 
     ## ------------------------------------------------------------
     ##  
-    ## sample_size: 120
-    ## distribution: chi
-    ## # A tibble: 4 × 12
-    ##   VARS           n  mean  trim    sd  skew    kurt   min   P25   P50   P75   max
-    ##   <fct>      <dbl> <dbl> <dbl> <dbl> <dbl>   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_t…  1000  2.99  2.99 0.224 0.213 -0.0319  2.34  2.84  2.99  3.14  3.69
-    ## 2 mean_trim…  1000  2.65  2.65 0.214 0.159 -0.130   2.07  2.51  2.64  2.80  3.30
-    ## 3 mean_trim…  1000  2.51  2.51 0.215 0.149 -0.170   1.93  2.37  2.50  2.65  3.15
-    ## 4 median      1000  2.36  2.36 0.240 0.243 -0.209   1.71  2.20  2.35  2.52  3.04
+    ## VARIABLE: mean_trim.2
+    ## 
+    ## # A tibble: 8 × 13
+    ##   sample_size distribution     n  mean  trim     sd   skew      kurt   min   P25
+    ##         <dbl> <chr>        <dbl> <dbl> <dbl>  <dbl>  <dbl>     <dbl> <dbl> <dbl>
+    ## 1          30 chi           1000  2.56  2.55 0.423  0.215  -0.0328    1.38  2.27
+    ## 2          30 norm          1000  2.51  2.50 0.293  0.378   0.437     1.78  2.30
+    ## 3          60 chi           1000  2.51  2.51 0.215  0.149  -0.170     1.93  2.37
+    ## 4          60 norm          1000  2.51  2.51 0.148  0.0699  0.0749    1.94  2.41
+    ## 5         120 chi           1000  3.00  3.00 0.196  0.0277  0.0462    2.36  2.86
+    ## 6         120 norm          1000  3.00  3.00 0.134  0.127   0.230     2.57  2.91
+    ## 7         240 chi           1000  3.00  3.00 0.0977 0.0878 -0.000557  2.69  2.93
+    ## 8         240 norm          1000  3.00  3.00 0.0684 0.0935 -0.146     2.79  2.95
+    ## # ℹ 3 more variables: P50 <dbl>, P75 <dbl>, max <dbl>
     ## 
     ## ------------------------------------------------------------
     ##  
-    ## sample_size: 240
-    ## distribution: chi
-    ## # A tibble: 4 × 12
-    ##   VARS           n  mean  trim    sd   skew   kurt   min   P25   P50   P75   max
-    ##   <fct>      <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_t…  1000  3.00  3.00 0.158 0.0822 0.0561  2.47  2.89  3.00  3.10  3.53
-    ## 2 mean_trim…  1000  2.65  2.65 0.148 0.0650 0.0595  2.10  2.55  2.65  2.75  3.11
-    ## 3 mean_trim…  1000  2.51  2.51 0.148 0.0699 0.0749  1.94  2.41  2.50  2.61  2.96
-    ## 4 median      1000  2.37  2.37 0.164 0.0263 0.0812  1.79  2.26  2.37  2.48  2.88
+    ## VARIABLE: median
     ## 
-    ## ------------------------------------------------------------
-    ##  
-    ## sample_size: 30
-    ## distribution: norm
-    ## # A tibble: 4 × 12
-    ##   VARS           n  mean  trim    sd   skew   kurt   min   P25   P50   P75   max
-    ##   <fct>      <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_t…  1000  3.00  2.99 0.185 0.0458 0.0342  2.36  2.87  2.99  3.13  3.64
-    ## 2 mean_trim…  1000  3.00  2.99 0.190 0.0408 0.0225  2.42  2.86  2.99  3.12  3.66
-    ## 3 mean_trim…  1000  3.00  3.00 0.196 0.0277 0.0462  2.36  2.86  2.99  3.13  3.67
-    ## 4 median      1000  3.00  3.00 0.222 0.0755 0.173   2.26  2.85  3.00  3.15  3.79
-    ## 
-    ## ------------------------------------------------------------
-    ##  
-    ## sample_size: 60
-    ## distribution: norm
-    ## # A tibble: 4 × 12
-    ##   VARS           n  mean  trim    sd   skew   kurt   min   P25   P50   P75   max
-    ##   <fct>      <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_no_t…  1000  3.00  3.00 0.125 0.118  0.326   2.59  2.92  3.00  3.08  3.48
-    ## 2 mean_trim…  1000  3.00  3.00 0.129 0.130  0.261   2.61  2.92  3.00  3.09  3.49
-    ## 3 mean_trim…  1000  3.00  3.00 0.134 0.127  0.230   2.57  2.91  3.00  3.09  3.49
-    ## 4 median      1000  3.01  3.01 0.157 0.0518 0.0579  2.46  2.89  3.00  3.12  3.53
-    ## 
-    ## ------------------------------------------------------------
-    ##  
-    ## sample_size: 120
-    ## distribution: norm
-    ## # A tibble: 4 × 12
-    ##   VARS        n  mean  trim     sd   skew     kurt   min   P25   P50   P75   max
-    ##   <fct>   <dbl> <dbl> <dbl>  <dbl>  <dbl>    <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_n…  1000  3.00  3.00 0.0908 0.0590  3.22e-2  2.72  2.94  3.00  3.06  3.29
-    ## 2 mean_t…  1000  3.00  3.00 0.0940 0.0884  1.61e-2  2.69  2.94  3.00  3.06  3.31
-    ## 3 mean_t…  1000  3.00  3.00 0.0977 0.0878 -5.57e-4  2.69  2.93  3.00  3.06  3.32
-    ## 4 median   1000  3.00  3.00 0.113  0.0609 -9.05e-2  2.64  2.92  3.00  3.07  3.36
-    ## 
-    ## ------------------------------------------------------------
-    ##  
-    ## sample_size: 240
-    ## distribution: norm
-    ## # A tibble: 4 × 12
-    ##   VARS        n  mean  trim     sd     skew   kurt   min   P25   P50   P75   max
-    ##   <fct>   <dbl> <dbl> <dbl>  <dbl>    <dbl>  <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1 mean_n…  1000  3.00  3.00 0.0643  7.45e-2 -0.189  2.81  2.96  3.00  3.04  3.25
-    ## 2 mean_t…  1000  3.00  3.00 0.0659  8.92e-2 -0.161  2.80  2.95  3.00  3.05  3.24
-    ## 3 mean_t…  1000  3.00  3.00 0.0684  9.35e-2 -0.146  2.79  2.95  3.00  3.05  3.23
-    ## 4 median   1000  3.00  3.00 0.0817 -9.91e-4 -0.172  2.71  2.94  3.00  3.06  3.26
+    ## # A tibble: 8 × 13
+    ##   sample_size distribution     n  mean  trim     sd     skew    kurt   min   P25
+    ##         <dbl> <chr>        <dbl> <dbl> <dbl>  <dbl>    <dbl>   <dbl> <dbl> <dbl>
+    ## 1          30 chi           1000  2.42  2.41 0.476   3.75e-1  0.313   1.05  2.10
+    ## 2          30 norm          1000  2.36  2.35 0.335   4.09e-1  0.484   1.32  2.13
+    ## 3          60 chi           1000  2.36  2.36 0.240   2.43e-1 -0.209   1.71  2.20
+    ## 4          60 norm          1000  2.37  2.37 0.164   2.63e-2  0.0812  1.79  2.26
+    ## 5         120 chi           1000  3.00  3.00 0.222   7.55e-2  0.173   2.26  2.85
+    ## 6         120 norm          1000  3.01  3.01 0.157   5.18e-2  0.0579  2.46  2.89
+    ## 7         240 chi           1000  3.00  3.00 0.113   6.09e-2 -0.0905  2.64  2.92
+    ## 8         240 norm          1000  3.00  3.00 0.0817 -9.91e-4 -0.172   2.71  2.94
+    ## # ℹ 3 more variables: P50 <dbl>, P75 <dbl>, max <dbl>
 
 ### Interpreting the results
 
@@ -476,6 +459,7 @@ witnessed rather clearly in the following table, which prints the
 relative efficiency of the estimators:
 
 ``` r
+
 REs <- res[,grepl('RE\\.', colnames(res))]
 data.frame(Design, REs)
 ```
@@ -499,7 +483,7 @@ data.frame(Design, REs)
     ## 7       9.2
     ## 8      17.1
 
-Finally, when the $\chi^{2}$ distribution was investigated only the
+Finally, when the $`\chi^2`$ distribution was investigated only the
 un-adjusted mean accurately portrayed the population mean. This isn’t
 surprising, because the trimmed mean is, after all, making inferences
 about the population trimmed mean, and the median is making inferences
@@ -519,6 +503,7 @@ A single replication in a Monte Carlo simulation results in the
 following objects:
 
 ``` r
+
 (condition <- Design[1, ])
 ```
 
@@ -528,6 +513,7 @@ following objects:
     ## 1          30 norm
 
 ``` r
+
 dat <- Generate(condition)
 dat
 ```
@@ -536,6 +522,7 @@ dat
     ## [16] 2.96 2.98 3.94 3.82 3.59 3.92 3.78 3.07 1.01 3.62 2.94 2.84 1.53 2.52 3.42
 
 ``` r
+
 res <- Analyse(condition, dat)
 res
 ```
@@ -556,6 +543,7 @@ meaningful in the grand scheme of things; so, it must be repeated a
 number of times.
 
 ``` r
+
 # repeat 1000x
 results <- matrix(0, 1000, 4)
 colnames(results) <- names(res)
@@ -576,6 +564,7 @@ head(results)
     ## [6,]          3.1         3.1         3.0    3.1
 
 ``` r
+
 descript(results) # common descriptive statistics
 ```
 
@@ -595,6 +584,7 @@ function to obtain average estimates, their associated sampling error,
 their efficiency, and so on.
 
 ``` r
+
 Summarise(condition, results) 
 ```
 

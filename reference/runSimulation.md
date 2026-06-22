@@ -231,13 +231,20 @@ print(x, list2char = TRUE, ...)
 - packages:
 
   a character vector of external packages to be used during the
-  simulation (e.g., `c('MASS', 'extraDistr', 'simsem')` ). Use this
-  input when running code in parallel to use non-standard functions from
-  additional packages. Note that any previously attached packages
-  explicitly loaded via [`library`](https://rdrr.io/r/base/library.html)
-  or [`require`](https://rdrr.io/r/base/library.html) will be
-  automatically added to this list, provided that they are visible in
-  the `otherPkgs` element from
+  simulation (e.g., `c('MASS', 'extraDistr', 'simsem')`), though if a
+  logical operator is detected will be passed to
+  [`CheckPackages`](http://philchalmers.github.io/SimDesign/reference/CheckPackages.md)
+  as well to ensure that the strong package version dependencies are
+  verified before executing the code (e.g.,
+  `c('MASS >= 7.3.65', 'extraDistr == 1.10.0.4')`).
+
+  Use this input when running code in parallel to use non-standard
+  functions from additional packages. Note that any previously attached
+  packages explicitly loaded via
+  [`library`](https://rdrr.io/r/base/library.html) or
+  [`require`](https://rdrr.io/r/base/library.html) will be automatically
+  added to this list, provided that they are visible in the `otherPkgs`
+  element from
   [`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html).
   Alternatively, functions can be called explicitly without attaching
   the package with the `::` operator (e.g.,
@@ -632,7 +639,8 @@ print(x, list2char = TRUE, ...)
   :   logical (default is `TRUE`); when defining the `cl` object
       internally, should the cluster object be built using `mirai` or
       `parallel`? Set this to `FALSE` for parallel behavior prior to
-      `SimDesign` version 2.25
+      `SimDesign` version 2.25. Note that if `mirai` is not available
+      then the `parallel` package will be used by default instead
 
   `stop_on_fatal`
 
@@ -1078,6 +1086,7 @@ Phil Chalmers <rphilip.chalmers@gmail.com>
 ## Examples
 
 ``` r
+
 #-------------------------------------------------------------------------------
 # Example 1: Sampling distribution of mean
 
@@ -1156,9 +1165,9 @@ Final
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Tue Apr 28 12:55:13 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Tue Apr 28 12:55:13 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Tue Apr 28 12:55:13 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Mon Jun 22 11:59:55 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Mon Jun 22 11:59:55 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Mon Jun 22 11:59:55 20…
 (results <- SimResults(Final))
 #> # A tibble: 6 × 2
 #>       N  mean
@@ -1184,9 +1193,9 @@ Final_rep
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Tue Apr 28 12:55:14 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Tue Apr 28 12:55:14 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Tue Apr 28 12:55:14 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Mon Jun 22 11:59:55 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Mon Jun 22 11:59:55 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Mon Jun 22 11:59:55 20…
 (results <- SimResults(Final_rep))
 #> # A tibble: 6 × 2
 #>       N  mean

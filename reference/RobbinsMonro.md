@@ -119,6 +119,7 @@ simultaneous perturbation method. IEEE Trans. Autom. Control 45,
 ## Examples
 
 ``` r
+
 # find x that solves f(x) - b = 0 for the following
 f.root <- function(x, b = .6) 1 / (1 + exp(-x)) - b
 f.root(.3)
@@ -190,7 +191,7 @@ retrm.PJ <- RobbinsMonro(f.root_noisy, .9, b = .01,
                          Polyak_Juditsky = TRUE)
 retrm.PJ   # final Polyak_Juditsky estimate
 #>           [,1]
-#> [1,] 0.4077852
+#> [1,] 0.4085212
 plot(retrm.PJ) # Robbins-Monro history
 
 plot(retrm.PJ, Polyak_Juditsky = TRUE) # Polyak_Juditsky history
