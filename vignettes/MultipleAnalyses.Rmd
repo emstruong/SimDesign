@@ -124,6 +124,10 @@ Analyse.DWLS <- function(condition, dat, fixed_objects) {
                      '\nF ~~ 1*F')
     lmod <- sem(lavmod, dat, ordered = colnames(dat))
     if(!lavInspect(lmod, 'converged')) stop('lavaan did not converge')
+    # convergence and admissibility are separate questions in lavaan: the
+    # optimiser regularly converges on a solution containing Heywood cases,
+    # which post.check() detects and lavInspect(., 'converged') does not
+    if(!lavTech(lmod, 'post.check')) stop('lavaan solution was inadmissible')
     cfs2 <- lavaan::coef(lmod)
     DWLS_alpha <- cfs2[1L:nitems]
     const <- sqrt(1 - DWLS_alpha^2)
@@ -656,6 +660,95 @@ res <- runSimulation(Design, replications=100, verbose=FALSE, parallel=TRUE,
 
 then only one analysis function will be applied at a time in the simulation experiment. Note that in this case there is no need to append 'MML' or 'DWLS' to the `results` objects as this becomes redundant with the `method` column in the `Design` object, and so the `analyse` list input is specified as an unnamed list (cf. earlier when the input was named, which appended `MML.` and `DWLS.` to the `results` output in `Summarise()`).
 
-Users may find this a more natural setup than having to merge all analysis information into a single `Analyse()` definition. The downside, however, is that the analysis function will be applied to different generated datasets, which while theoretically unbiased could have ramifications should the analysis functions throw errors at different rates (even when explicitly supplying a `seed` vector input to `runSimulation()`).  
+Users may find this a more natural setup than having to merge all analysis information into a single `Analyse()` definition. The downside, however, is that the analysis function will be applied to different generated datasets, which while theoretically unbiased could have ramifications should the analysis functions throw errors at different rates (even when explicitly supplying a `seed` vector input to `runSimulation()`).
+
+# Convergence, admissibility, and whether to re-draw
+
+Both analysis functions above `stop()` when their estimator fails, which is the
+idiomatic `SimDesign` way of saying "this dataset is unusable, give me another
+one". Two aspects of that decision deserve to be spelled out when more than one
+analysis function is in play.
+
+## Convergence and admissibility are different questions
+
+`lavInspect(lmod, 'converged')` reports only that the optimiser reached its
+stopping criterion. It says nothing about whether the solution it stopped at is
+a legal one. `lavaan::lavTech(lmod, 'post.check')` is the separate admissibility
+test: it checks for negative variance estimates, correlations outside
+$[-1, 1]$, and non-positive-definite implied matrices. The two are genuinely
+independent, and in the ordinal one-factor model used above the optimiser
+essentially always converges while still returning Heywood cases at smaller
+sample sizes. Checking only convergence therefore lets inadmissible solutions
+straight through into `Summarise()`, which is why `Analyse.DWLS()` above tests
+both. The same distinction applies elsewhere: `mirt`'s
+`extract.mirt(mod, 'converged')`, `lme4`'s singular-fit check, and so on.
+
+Note also that the transformation `DWLS_as <- DWLS_alpha / sqrt(1 - DWLS_alpha^2)`
+silently produces `NaN` for a Heywood loading. `SimDesign` would catch that on
+its own --- `NaN` results trigger a re-draw unless `control = list(allow_nan = TRUE)`
+is set --- but relying on that side effect means the re-draw happens for a
+reason the simulation never records. An explicit `stop()` with an informative
+message shows up in `SimErrors()` and is much easier to interpret later.
+
+## A `stop()` discards the whole replication, not just one analysis
+
+When any analysis function raises an error, `SimDesign` discards the generated
+dataset and re-runs the *entire* generate-analyse chain on a fresh one. Every
+other analysis function's result for that dataset is thrown away with it, even
+when those results were perfectly fine.
+
+With a single `Analyse()` this is unremarkable. With several, it changes what
+the reported summaries estimate. Each estimator is no longer summarised over
+the datasets that *it* can handle; it is summarised over the datasets that
+*every* estimator can handle simultaneously. Writing $S_k$ for the event that
+estimator $k$ succeeds, re-drawing reports
+$E[\hat\theta_k - \theta \mid S_1 \cap \dots \cap S_K]$ rather than
+$E[\hat\theta_k - \theta \mid S_k]$. The estimator with the better convergence
+behaviour is the one whose results are most affected, since it inherits the
+other estimators' failures. Whenever failures are informative about the data
+--- and non-convergence usually is --- the two quantities differ.
+
+Re-drawing also erases the failure rates themselves. Each estimator's
+convergence and admissibility rate is often a headline result of an
+estimator-comparison study, and once the failures have been re-drawn away all
+that survives is a pooled `ERRORS` count that cannot be attributed to a
+particular analysis function.
+
+## Keeping the failures instead
+
+To keep a replication when only some of its estimators succeeded, return `NA`
+for the ones that failed instead of calling `stop()`, and tell `runSimulation()`
+that `NA`s are legitimate results:
+
+```{r eval=FALSE}
+Analyse.DWLS <- function(condition, dat, fixed_objects) {
+    nitems <- condition$nitems
+    lavmod <- paste0('F =~ ', paste0('NA*', colnames(dat)[1L], ' + '),
+                     paste0(colnames(dat)[-1L], collapse = ' + '),
+                     '\nF ~~ 1*F')
+    lmod <- sem(lavmod, dat, ordered = colnames(dat))
+    ok <- lavInspect(lmod, 'converged') && lavTech(lmod, 'post.check')
+    if(!ok) return(c(as = rep(NA_real_, nitems), converged = 0))
+    cfs2 <- lavaan::coef(lmod)
+    DWLS_alpha <- cfs2[1L:nitems]
+    DWLS_as <- DWLS_alpha / sqrt(1 - DWLS_alpha^2)
+    c(as = unname(DWLS_as), converged = 1)
+}
+
+res <- runSimulation(Design, replications = 1000, generate = Generate,
+                     analyse = list(FIML = Analyse.FIML, DWLS = Analyse.DWLS),
+                     summarise = Summarise, fixed_objects = pars,
+                     control = list(allow_na = TRUE))
+```
+
+`Summarise()` then sees the `NA`s and can decide what to do with them, and the
+`converged` element gives the convergence rate as a first-class result of the
+simulation rather than a side effect of the error log. Which policy is
+appropriate is a substantive choice, not a technical one: re-drawing answers
+"how do these estimators compare on data all of them can fit", while keeping
+the failures answers "how does each estimator perform on the data it can fit,
+and how often can it fit any". The important thing is that these are different
+questions, and at sample sizes where failures are common they have different
+answers.
 
 

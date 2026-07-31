@@ -1,0 +1,5 @@
+# Raw simulation output is regenerable from the scripts and is too large to
+# track; the derived .csv summaries and README tables are committed instead.
+*.rds
+*.log
+.04done
