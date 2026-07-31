@@ -243,8 +243,12 @@ fuzzy_reduce <- function(df){
         if(matched[i]) next
         unames <- c(unames, nms[i])
         udf <- cbind(udf, df[,i])
-        temp_matched <- agrepl(nms[i], nms)
-        udf[,ncol(udf)] <- rowSums(df[,temp_matched], na.rm = TRUE)
+        # only absorb columns not already reported under an earlier group,
+        # otherwise a message that fuzzy-matches an earlier column has that
+        # column's counts added to it as well and the totals over-report the
+        # number of errors that actually occurred
+        temp_matched <- agrepl(nms[i], nms) & !matched
+        udf[,ncol(udf)] <- rowSums(df[,temp_matched, drop=FALSE], na.rm = TRUE)
         matched <- matched | temp_matched
     }
     udf

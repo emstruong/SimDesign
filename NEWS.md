@@ -2,6 +2,20 @@
 
 ## Changes in SimDesign 2.26
 
+- Fixed `SimErrors()`/`SimWarnings()` over-reporting counts when one message is
+  a near-substring of another. `fuzzy_reduce()` summed every fuzzy match into
+  each group, including columns already reported under an earlier group, so an
+  attempt in which two `analyse` functions failed together was counted both
+  under the combined `"2 INDEPENDENT ERRORS THROWN"` message and again under
+  the individual message. Totals could therefore exceed the `ERRORS` count
+
+- `SimErrors()` and `SimWarnings()` gain a `fuzzy` argument (default `TRUE`,
+  unchanged behaviour). With `fuzzy = FALSE` every distinct message is reported
+  separately, which matters when several `analyse` functions raise similarly
+  worded errors: the default approximate matching can group them under a single
+  name, making it look as though one analysis function is responsible for all
+  of them
+
 - Fixed the automatic re-draw messages for `NA`/`NaN` results, which used
   `paste(NA_names, sep=',')` where `collapse` was intended. When more than one
   element was `NA`/`NaN` the `sprintf()` call vectorised and `stop()` pasted the

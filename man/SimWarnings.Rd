@@ -4,13 +4,16 @@
 \alias{SimWarnings}
 \title{Extract Simulation Warnings}
 \usage{
-SimWarnings(obj, subset = TRUE)
+SimWarnings(obj, subset = TRUE, fuzzy = TRUE)
 }
 \arguments{
 \item{obj}{object returned from \code{\link{runSimulation}} containing an \code{WARNINGS} column}
 
 \item{subset}{logical; take a subset of the \code{design} object showing only conditions that
 returned warnings?}
+
+\item{fuzzy}{logical; group warning messages that differ only slightly into a single
+column? Set to \code{FALSE} to report every distinct message separately}
 }
 \description{
 Extractor function in situations where \code{\link{runSimulation}} returned a simulation

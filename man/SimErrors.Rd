@@ -4,7 +4,7 @@
 \alias{SimErrors}
 \title{Extract Simulation Errors}
 \usage{
-SimErrors(obj, seeds = FALSE, subset = TRUE)
+SimErrors(obj, seeds = FALSE, subset = TRUE, fuzzy = TRUE)
 }
 \arguments{
 \item{obj}{object returned from \code{\link{runSimulation}} containing an \code{ERRORS} column}
@@ -13,6 +13,11 @@ SimErrors(obj, seeds = FALSE, subset = TRUE)
 
 \item{subset}{logical; take a subset of the \code{design} object showing only conditions that
 returned errors?}
+
+\item{fuzzy}{logical; group error messages that differ only slightly (e.g., by an
+iteration count) into a single column? Set to \code{FALSE} to report every distinct
+message separately, which is useful when several \code{analyse} functions raise
+similarly worded errors and the per-function attribution matters}
 }
 \description{
 Extractor function in situations where \code{\link{runSimulation}} returned a simulation

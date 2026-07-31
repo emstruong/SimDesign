@@ -171,14 +171,41 @@ and `stop()` concatenates, yielding
 `...redrawing: as4...redrawing: as7` and a separate `SimErrors()` column per
 `NaN` pattern. Fixed in this branch.
 
-**An accounting discrepancy I could not resolve.** The two runs accept an
-identical set of replications, but tally different numbers of rejected
-attempts at N = 50 / 10 (375 for the vignette policy, 493 with `post.check`).
-The mirt-attributed counts agree exactly (368 in both); the gap is entirely in
-how DWLS failures are attributed, and 493 - 375 equals the 118 attempts where
-both estimators failed. Since the accepted draws are provably identical, this
-looks like error *attribution* rather than a difference in re-draw behaviour,
-but it is worth a separate look.
+**An over-count in `SimErrors()`, since fixed.** The two runs accept an
+identical set of replications but originally tallied different numbers of
+rejected attempts at N = 50 / 10 (375 for the vignette policy, 493 with
+`post.check`). That was not a difference in re-draw behaviour. `SimErrors()`
+passes its message table through `fuzzy_reduce()`, which groups approximately
+matching messages via `agrepl()`. The short message
+`DWLS.ERROR: lavaan solution not admissible` also occurs *inside* the longer
+`2 INDEPENDENT ERRORS THROWN: FIML.ERROR: ... DWLS.ERROR: ...` message, so the
+combined column was reported as its own group **and** summed again into the
+DWLS group:
+
+```
+                                    old fuzzy_reduce   fixed
+2 INDEPENDENT ERRORS (both failed)         118          118
+DWLS.ERROR: not admissible                 125            7
+FIML.ERROR: mirt did not converge          250          250
+                                    ----------------  ------
+total                                      493          375
+```
+
+375 is exactly the vignette run's total, and the corrected 7 is exactly the
+number of `NaN` re-draws the vignette run reported. The two policies really do
+re-draw identically, which is what the byte-identical results already implied.
+Fixed in this branch (`fuzzy_reduce()` no longer absorbs columns already
+reported under an earlier group), with `SimErrors(..., fuzzy = FALSE)` added
+so exact per-message attribution is available.
+
+A second, separate consequence of the same `agrepl()` default surfaced while
+tracking this down: two genuinely different errors that differ by only a few
+characters --- `A.ERROR: AAA failed` and `B.ERROR: BBB failed` --- are within
+`agrep`'s default 10% edit distance and get merged under the *first* message's
+name. Counts stay correct, but a reader of `SimErrors()` sees the wrong
+analysis function blamed. `fuzzy = FALSE` avoids it; whether the default
+tolerance should be tightened is a judgement call for the maintainer.
+`dev/issue96/07-simerrors-bug.R` is a self-contained reproducer for both.
 
 ## Result 5: the failure rates themselves
 
