@@ -138,7 +138,49 @@ change the numbers that study publishes, by up to a quarter of their value, in
 a direction that always flatters whichever estimator is not causing the
 failures.
 
-## Result 4: the failure rates themselves
+## Result 4: validating the post-hoc policies against a real re-draw
+
+`04-redraw-run.R` re-runs the small-N cells with the vignette's actual
+`stop()`-based analysis functions and the re-draw switched on (1000
+replications). At N = 50 / 10 items the DWLS bias it produces is 0.1603,
+against 0.1552 for the post-hoc `listwise` policy and 0.2046 for `marginal`.
+The re-draw lands on `listwise`, roughly 3 Monte Carlo standard errors away
+from `marginal`, which is what the post-hoc construction predicts.
+
+Two by-products of that run are worth recording.
+
+**Adding `post.check` does not change this simulation's numbers.** The
+`+post.check` re-draw run and the vignette re-draw run produced byte-identical
+stored results, reproduced in independent R sessions. The reason shows up in
+the main run: `lavTech(., 'post.check') == FALSE` and "the vignette's
+`alpha / sqrt(1 - alpha^2)` transformation returns a non-finite value" flag
+*exactly the same replications*, with perfect agreement across all four
+small-N cells (8000 replications). That is a property of this model rather
+than a general fact --- with `F ~~ 1*F` the residual variance is
+`1 - lambda^2`, so a negative variance and a `NaN` transformation are the same
+event --- and in a model where an inadmissible solution does not happen to
+blow up the reported quantity, `post.check` would catch cases the `NaN`
+heuristic misses. The case for the explicit check is diagnostic, not
+numerical: it names the reason in `SimErrors()` instead of surfacing as
+`The following return NaN and required redrawing`.
+
+**A message-formatting bug, found on the way.** `R/functions.R` built the
+automatic re-draw message with `paste(NA_names, sep=',')` where `collapse` was
+meant. With more than one `NA`/`NaN` element the `sprintf()` call vectorises
+and `stop()` concatenates, yielding
+`...redrawing: as4...redrawing: as7` and a separate `SimErrors()` column per
+`NaN` pattern. Fixed in this branch.
+
+**An accounting discrepancy I could not resolve.** The two runs accept an
+identical set of replications, but tally different numbers of rejected
+attempts at N = 50 / 10 (375 for the vignette policy, 493 with `post.check`).
+The mirt-attributed counts agree exactly (368 in both); the gap is entirely in
+how DWLS failures are attributed, and 493 - 375 equals the 118 attempts where
+both estimators failed. Since the accepted draws are provably identical, this
+looks like error *attribution* rather than a difference in re-draw behaviour,
+but it is worth a separate look.
+
+## Result 5: the failure rates themselves
 
 The re-draw's largest cost is not the perturbation to bias — it is that the
 convergence and admissibility rates never reach the results object at all. In

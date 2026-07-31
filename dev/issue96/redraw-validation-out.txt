@@ -1,0 +1,123 @@
+Loading required package: stats4
+Loading required package: lattice
+This is lavaan 0.6-17
+lavaan is FREE software! Please report any bugs.
+
+==== actual redraw runs vs the post-hoc policies ====
+                           run sample_size nitems estimator    n    bias   RMSE
+             post-hoc listwise          50     10      DWLS 1461 0.15523 0.6105
+ post-hoc marginal (no redraw)          50     10      DWLS 1832 0.20457 0.7703
+          redraw (+post.check)          50     10      DWLS 1000 0.16035 0.6625
+             redraw (vignette)          50     10      DWLS 1000 0.16035 0.6625
+             post-hoc listwise          50     10      FIML 1461 0.10944 0.5062
+ post-hoc marginal (no redraw)          50     10      FIML 1479 0.11089 0.5071
+          redraw (+post.check)          50     10      FIML 1000 0.11355 0.5105
+             redraw (vignette)          50     10      FIML 1000 0.11355 0.5105
+             post-hoc listwise         100     10      DWLS 1884 0.09357 0.3787
+ post-hoc marginal (no redraw)         100     10      DWLS 1953 0.10371 0.4092
+          redraw (+post.check)         100     10      DWLS 1000 0.09093 0.3581
+             redraw (vignette)         100     10      DWLS 1000 0.09093 0.3581
+             post-hoc listwise         100     10      FIML 1884 0.06886 0.3411
+ post-hoc marginal (no redraw)         100     10      FIML 1893 0.07058 0.3519
+          redraw (+post.check)         100     10      FIML 1000 0.07177 0.3484
+             redraw (vignette)         100     10      FIML 1000 0.07177 0.3484
+             post-hoc listwise          50     20      DWLS 1841 0.16401 0.5066
+ post-hoc marginal (no redraw)          50     20      DWLS 1965 0.17474 0.5682
+          redraw (+post.check)          50     20      DWLS 1000 0.16729 0.5529
+             redraw (vignette)          50     20      DWLS 1000 0.16729 0.5529
+             post-hoc listwise          50     20      FIML 1841 0.12166 0.4657
+ post-hoc marginal (no redraw)          50     20      FIML 1847 0.12198 0.4667
+          redraw (+post.check)          50     20      FIML 1000 0.11971 0.4621
+             redraw (vignette)          50     20      FIML 1000 0.11971 0.4621
+             post-hoc listwise         100     20      DWLS 1994 0.07107 0.2766
+ post-hoc marginal (no redraw)         100     20      DWLS 1998 0.07153 0.2785
+          redraw (+post.check)         100     20      DWLS 1000 0.06914 0.2792
+             redraw (vignette)         100     20      DWLS 1000 0.06914 0.2792
+             post-hoc listwise         100     20      FIML 1994 0.05548 0.2775
+ post-hoc marginal (no redraw)         100     20      FIML 1996 0.05570 0.2782
+          redraw (+post.check)         100     20      FIML 1000 0.05524 0.2831
+             redraw (vignette)         100     20      FIML 1000 0.05524 0.2831
+   bias_lam RMSE_lam
+  0.0141578  0.14648
+  0.0145574  0.14766
+  0.0140864  0.14482
+  0.0140864  0.14482
+ -0.0046410  0.15160
+ -0.0044675  0.15138
+ -0.0043554  0.14967
+ -0.0043554  0.14967
+  0.0078283  0.10282
+  0.0078191  0.10302
+  0.0082992  0.10248
+  0.0082992  0.10248
+ -0.0030833  0.10613
+ -0.0031174  0.10624
+ -0.0024724  0.10599
+ -0.0024724  0.10599
+  0.0204945  0.13979
+  0.0210021  0.13991
+  0.0197078  0.14074
+  0.0197078  0.14074
+  0.0025070  0.14121
+  0.0025076  0.14122
+  0.0009426  0.14186
+  0.0009426  0.14186
+  0.0095996  0.09663
+  0.0096233  0.09664
+  0.0084246  0.09791
+  0.0084246  0.09791
+ -0.0002361  0.09875
+ -0.0002228  0.09875
+ -0.0009235  0.10035
+ -0.0009235  0.10035
+
+==== errors consumed by the redraw loop (vignette policy) ====
+  sample_size nitems
+1          50     10
+2         100     10
+3          50     20
+4         100     20
+  ERROR:  Error : The following return NaN and required redrawing: DWLS.as4\n
+1                                                                           7
+2                                                                           3
+3                                                                           2
+4                                                                           0
+  ERROR:  FIML.ERROR:   mirt did not converge\n\n
+1                                             368
+2                                              66
+3                                              85
+4                                               3
+
+==== errors consumed by the redraw loop (+post.check) ====
+  sample_size nitems
+1          50     10
+2         100     10
+3          50     20
+4         100     20
+  ERROR:  2 INDEPENDENT ERRORS THROWN:   FIML.ERROR:   mirt did not converge\n  DWLS.ERROR:   lavaan solution not admissible\n\n
+1                                                                                                                            118
+2                                                                                                                             20
+3                                                                                                                             19
+4                                                                                                                              1
+  ERROR:  DWLS.ERROR:   lavaan solution not admissible\n\n
+1                                                      125
+2                                                       23
+3                                                       21
+4                                                        1
+  ERROR:  FIML.ERROR:   mirt did not converge\n\n
+1                                             250
+2                                              46
+3                                              66
+4                                               2
+
+==== wall time ====
+               run sample_size nitems SIM_TIME
+ redraw (vignette)          50     10    288.2
+ redraw (vignette)         100     10    120.9
+ redraw (vignette)          50     20    271.3
+ redraw (vignette)         100     20    171.9
+                  run sample_size nitems SIM_TIME
+ redraw (+post.check)          50     10    262.7
+ redraw (+post.check)         100     10    125.5
+ redraw (+post.check)          50     20    279.6
+ redraw (+post.check)         100     20    171.4

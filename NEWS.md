@@ -2,6 +2,14 @@
 
 ## Changes in SimDesign 2.26
 
+- Fixed the automatic re-draw messages for `NA`/`NaN` results, which used
+  `paste(NA_names, sep=',')` where `collapse` was intended. When more than one
+  element was `NA`/`NaN` the `sprintf()` call vectorised and `stop()` pasted the
+  messages end to end, producing output such as
+  `The following return NaN and required redrawing: as4The following return NaN
+  and required redrawing: as7` and a separate `SimErrors()` column per `NaN`
+  pattern
+
 - `verbose` option in `runArraySimulation()` now prints extract QOL information
   about SLURM clusters (e.g., requested RAM, cores, IDs, etc), and about
   the indexed information from the `arrayID`
