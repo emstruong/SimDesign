@@ -63,4 +63,3 @@ LazyData: true
 URL: http://philchalmers.github.io/SimDesign/, https://github.com/philchalmers/SimDesign/wiki
 Encoding: UTF-8
 Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.1
