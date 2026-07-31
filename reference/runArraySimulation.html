@@ -25,7 +25,7 @@ vignette for a brief tutorial of this setup."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">SimDesign</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.25.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.26.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -213,9 +213,8 @@ See <code><a href="runSimulation.html">runSimulation</a></code></p></dd>
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>logical; pass a verbose flag to <code><a href="runSimulation.html">runSimulation</a></code>.
-Unlike <code><a href="runSimulation.html">runSimulation</a></code> this is set to FALSE during interactive
-sessions, though set to TRUE when non-interactive and information about the
-session itself should be stored (e.g., in SLURM <code>.out</code> files)</p></dd>
+On HPC clusters this is automatically set to <code>TRUE</code> so that progress can be tracked
+in locally stored files (e.g., in SLURM, the <code>.out</code> files)</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -238,6 +237,10 @@ on the HPC cluster (e.g., approximately 90<!-- % of this time or less, though --
 depends on how long, and how variable, each replication is). Simulations with missing
 replications should submit a new set of jobs at a later time
 to collect the missing information.</p>
+<p>Note that because a large number of files may be stored by this function it is recommended
+to change the working directory of your SLURM submissions to your dedicated <code>SCRATCH</code>
+directory. Use something like <code>setwd(Sys.getenv("SCRATCH"))</code>, if applicable, prior
+to executing <code>runArraySimulation()</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -437,7 +440,7 @@ with the SimDesign Package. <code>The Quantitative Methods for Psychology, 16</c
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

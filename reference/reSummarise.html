@@ -19,7 +19,7 @@ and final collection of the respective results."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">SimDesign</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.25.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.26.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,7 +83,8 @@ and final collection of the respective results.</p>
 <span>  boot_method <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  boot_draws <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  CI <span class="op">=</span> <span class="fl">0.95</span>,</span>
-<span>  prefix <span class="op">=</span> <span class="st">"results-row"</span></span>
+<span>  prefix <span class="op">=</span> <span class="st">"results-row"</span>,</span>
+<span>  write.dir <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -152,6 +153,14 @@ function after the generate-analyse replications are collected. Default is 1000<
 <dt id="arg-prefix">prefix<a class="anchor" aria-label="anchor" href="#arg-prefix"></a></dt>
 <dd><p>character indicating prefix used for stored files</p></dd>
 
+
+<dt id="arg-write-dir">write.dir<a class="anchor" aria-label="anchor" href="#arg-write-dir"></a></dt>
+<dd><p>(optional) a character vector used to indicate that after the
+<code>reSummarise</code> is complete the input file should be saved with a suitable sub directory.
+This is useful in output like <code><a href="runArraySimulation.html">runArraySimulation</a></code> which contains all
+the simulation information as <code>.rds</code> files that should be carried over into the
+new files. Only applicable when input files are of class <code>'SimDesign'</code></p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -207,10 +216,40 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="SimClean.html">SimClean</a></span><span class="op">(</span>dir<span class="op">=</span><span class="st">'simresults/'</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">###################</span></span></span>
+<span class="r-in"><span><span class="co"># Similar, but using runArraySimulation() implementation</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">Design</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="runArraySimulation.html">runArraySimulation</a></span><span class="op">(</span>design<span class="op">=</span><span class="va">Design</span>, arrayID<span class="op">=</span><span class="va">i</span>,</span></span>
+<span class="r-in"><span>                  replications<span class="op">=</span><span class="fl">50</span>,</span></span>
+<span class="r-in"><span>                  generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>,</span></span>
+<span class="r-in"><span>                  summarise<span class="op">=</span><span class="va">Summarise</span>, iseed<span class="op">=</span><span class="fl">42</span>,</span></span>
+<span class="r-in"><span>                  filename <span class="op">=</span> <span class="st">'simresults'</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">'simresults-%i.rds'</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">res2</span> <span class="op">&lt;-</span> <span class="fu">reSummarise</span><span class="op">(</span><span class="va">Summarise2</span>, files <span class="op">=</span> <span class="va">files</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">res2</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># save output as though reSummarise() were used in the original .rds files</span></span></span>
+<span class="r-in"><span><span class="fu">reSummarise</span><span class="op">(</span><span class="va">Summarise2</span>, files <span class="op">=</span> <span class="va">files</span>, write.dir <span class="op">=</span> <span class="st">'reSummarise'</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">'reSummarise'</span><span class="op">)</span>     <span class="co"># new files in sub directory</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># inspect newly saved RDS files</span></span></span>
+<span class="r-in"><span><span class="op">(</span><span class="va">inp</span> <span class="op">&lt;-</span> <span class="fu"><a href="SimRead.html">SimRead</a></span><span class="op">(</span><span class="st">'reSummarise/simresults-1.rds'</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">inp</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># collect from all files</span></span></span>
+<span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="SimCollect.html">SimCollect</a></span><span class="op">(</span>dir<span class="op">=</span><span class="st">'reSummarise'</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="SimResults.html">SimResults</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># clean</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="SimClean.html">SimClean</a></span><span class="op">(</span>dirs<span class="op">=</span><span class="st">'reSummarise'</span>, files<span class="op">=</span><span class="va">files</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">###</span></span></span>
-<span class="r-in"><span><span class="co"># Similar, but with results stored within the final object</span></span></span>
+<span class="r-in"><span><span class="co"># Results stored within the final object instead and resummarised</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="runSimulation.html">runSimulation</a></span><span class="op">(</span>design<span class="op">=</span><span class="va">Design</span>, replications<span class="op">=</span><span class="fl">50</span>, store_results <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>                     generate<span class="op">=</span><span class="va">Generate</span>, analyse<span class="op">=</span><span class="va">Analyse</span>, summarise<span class="op">=</span><span class="va">Summarise</span><span class="op">)</span></span></span>
@@ -218,9 +257,9 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       N   mean median REPLICATIONS SIM_TIME       SEED COMPLETED               </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.192 10.230           50 0.01s    <span style="text-decoration: underline;">1</span>771<span style="text-decoration: underline;">457</span>935 Mon Jun 22 12:27:13 2026</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.146 10.084           50 0.01s     590<span style="text-decoration: underline;">590</span>962 Mon Jun 22 12:27:13 2026</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30 10.257 10.328           50 0.01s     273<span style="text-decoration: underline;">992</span>574 Mon Jun 22 12:27:13 2026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    10 10.192 10.230           50 0.01s    <span style="text-decoration: underline;">1</span>771<span style="text-decoration: underline;">457</span>935 Fri Jul 31 17:56:29 2026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>    20 10.146 10.084           50 0.01s     590<span style="text-decoration: underline;">590</span>962 Fri Jul 31 17:56:29 2026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>    30 10.257 10.328           50 0.01s     273<span style="text-decoration: underline;">992</span>574 Fri Jul 31 17:56:29 2026</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># same summarise but with bootstrapping</span></span></span>
 <span class="r-in"><span><span class="va">res2</span> <span class="op">&lt;-</span> <span class="fu">reSummarise</span><span class="op">(</span><span class="va">Summarise</span>, results <span class="op">=</span> <span class="va">res</span>, boot_method <span class="op">=</span> <span class="st">'basic'</span><span class="op">)</span></span></span>
@@ -244,7 +283,7 @@ Carlo simulation. <code>Journal of Statistics Education, 24</code>(3), 136-156.
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

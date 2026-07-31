@@ -40,7 +40,7 @@ runSimulation(
   store_results = TRUE,
   save_results = FALSE,
   parallel = FALSE,
-  ncores = parallelly::availableCores(omit = 1L),
+  ncores = min(parallelly::availableCores(omit = 1L), replications),
   cl = NULL,
   notification = "none",
   notifier = NULL,
@@ -424,7 +424,8 @@ print(x, list2char = TRUE, ...)
 
   number of cores to be used in parallel execution (ignored if using the
   [`future`](https://future.futureverse.org/reference/future.html)
-  package approach). Default uses all available minus 1
+  package approach). Default uses all available minus 1 or
+  `replications`, whichever is smaller
 
 - cl:
 
@@ -837,8 +838,10 @@ print(x, list2char = TRUE, ...)
 
 - verbose:
 
-  logical; print messages to the R console? Default is `TRUE` when in
-  interactive mode
+  logical; print messages to the R console? Set to `TRUE` in interactive
+  mode. On HPC clusters this is automatically set to `TRUE` so that
+  progress can be tracked in locally stored files (e.g., in SLURM, the
+  `.out` files)
 
 - object:
 
@@ -1165,9 +1168,9 @@ Final
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Mon Jun 22 12:27:17 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Mon Jun 22 12:27:17 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Mon Jun 22 12:27:17 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Fri Jul 31 17:56:34 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Fri Jul 31 17:56:34 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Fri Jul 31 17:56:34 20…
 (results <- SimResults(Final))
 #> # A tibble: 6 × 2
 #>       N  mean
@@ -1193,9 +1196,9 @@ Final_rep
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Mon Jun 22 12:27:17 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Mon Jun 22 12:27:17 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Mon Jun 22 12:27:17 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Fri Jul 31 17:56:34 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Fri Jul 31 17:56:34 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Fri Jul 31 17:56:34 20…
 (results <- SimResults(Final_rep))
 #> # A tibble: 6 × 2
 #>       N  mean
@@ -1699,8 +1702,7 @@ results <- runSimulation(design = Design,
                          prepare = prepare,
                          generate = generate,
                          analyse = analyse,
-                         summarise = summarise,
-                         verbose = FALSE)
+                         summarise = summarise)
 
 results
 

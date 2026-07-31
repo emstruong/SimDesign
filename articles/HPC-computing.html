@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">SimDesign</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.25.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.26.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@
                         <h4 data-toc-skip class="author">Phil
 Chalmers</h4>
             
-            <h4 data-toc-skip class="date">2026-06-22</h4>
+            <h4 data-toc-skip class="date">2026-07-31</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/philchalmers/SimDesign/blob/main/vignettes/HPC-computing.Rmd" class="external-link"><code>vignettes/HPC-computing.Rmd</code></a></small>
       <div class="d-none name"><code>HPC-computing.Rmd</code></div>
@@ -177,7 +177,6 @@ with this job, as well as larger amounts of RAM.</p>
 #SBATCH --job-name="My simulation (multiple CPUs)"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=somewhere@out.there
-#SBATCH --output=/dev/null    ## (optional) delete .out files
 #SBATCH --time=12:00:00       ## HH:MM:SS
 #SBATCH --cpus-per-task=96    ## Build a computer with 96 cores
 #SBATCH --mem-per-cpu=2G      ## Build a computer with 192GB of RAM 
@@ -504,7 +503,6 @@ following, stored into a suitable <code>.slurm</code> file:</p>
 #SBATCH --job-name="My simulation (array jobs, distributing conditions + replications)"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=somewhere@out.there
-#SBATCH --output=/dev/null    ## (optional) delete .out files
 #SBATCH --time=12:00:00       ## HH:MM:SS
 #SBATCH --mem-per-cpu=4G      ## 4GB of RAM per cpu
 #SBATCH --cpus-per-task=1
@@ -707,7 +705,6 @@ something like the following would work:</p>
 #SBATCH --job-name="My simulation (arrays + multiple CPUs)"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=somewhere@out.there
-#SBATCH --output=/dev/null    ## (optional) delete .out files
 #SBATCH --time=04:00:00       ## HH:MM:SS
 #SBATCH --mem-per-cpu=4G      ## Build a computing cluster with 64GB of RAM 
 #SBATCH --cpus-per-task=16    ## 16 CPUs per array, likely built from 1 node
@@ -884,8 +881,8 @@ via inspection of the aggregated results</p>
 1    10                1000               10000
 2    30                2000               10000</code></pre>
 <div class="section level4">
-<h4 id="create-new-conditions-for-missing-replications-and-use-rbinddesign">Create new conditions for missing replications, and use
-<code>rbindDesign()</code><a class="anchor" aria-label="anchor" href="#create-new-conditions-for-missing-replications-and-use-rbinddesign"></a>
+<h4 id="create-new-conditions-for-missing-replications-and-use-rbind">Create new conditions for missing replications, and use
+<code>rbind()</code><a class="anchor" aria-label="anchor" href="#create-new-conditions-for-missing-replications-and-use-rbind"></a>
 </h4>
 <p>Next, build a new simulation structure containing only the missing
 information components.</p>
@@ -918,7 +915,7 @@ were part of the initial job submission. Note that the
 <code>Design</code> object in its construction so that the internal
 <code>Design.ID</code> attributes are properly tracked.</p>
 <p>Finally, the new <code>subDesign</code> information is row-bound to
-the original expanded version using <code><a href="../reference/createDesign.html">rbindDesign()</a></code> with
+the original expanded version using <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code> with
 <code>keep.IDs = TRUE</code> (the default), though telling the scheduler
 to only evaluate these new rows in the <code>#SBATCH --array</code>
 specification.</p>
@@ -948,7 +945,7 @@ specification.</p>
 <span><span class="co">## 50 50</span></span></code></pre>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># new total design and replication objects</span></span>
-<span><span class="va">Design_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createDesign.html">rbindDesign</a></span><span class="op">(</span><span class="va">Design300</span>, <span class="va">Design_left</span>, keep.IDs<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">Design_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">Design300</span>, <span class="va">Design_left</span>, keep.IDs<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">Design_total</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 400</span></span></code></pre>
 <div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
@@ -1023,7 +1020,7 @@ appears yet again on the second submission.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

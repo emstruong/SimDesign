@@ -158,11 +158,9 @@ runArraySimulation(
 
   logical; pass a verbose flag to
   [`runSimulation`](http://philchalmers.github.io/SimDesign/reference/runSimulation.md).
-  Unlike
-  [`runSimulation`](http://philchalmers.github.io/SimDesign/reference/runSimulation.md)
-  this is set to FALSE during interactive sessions, though set to TRUE
-  when non-interactive and information about the session itself should
-  be stored (e.g., in SLURM `.out` files)
+  On HPC clusters this is automatically set to `TRUE` so that progress
+  can be tracked in locally stored files (e.g., in SLURM, the `.out`
+  files)
 
 ## Details
 
@@ -187,6 +185,12 @@ allocated on the HPC cluster (e.g., approximately 90 depends on how
 long, and how variable, each replication is). Simulations with missing
 replications should submit a new set of jobs at a later time to collect
 the missing information.
+
+Note that because a large number of files may be stored by this function
+it is recommended to change the working directory of your SLURM
+submissions to your dedicated `SCRATCH` directory. Use something like
+`setwd(Sys.getenv("SCRATCH"))`, if applicable, prior to executing
+`runArraySimulation()`.
 
 ## References
 

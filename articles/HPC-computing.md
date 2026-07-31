@@ -105,7 +105,6 @@ job, as well as larger amounts of RAM.
     #SBATCH --job-name="My simulation (multiple CPUs)"
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=somewhere@out.there
-    #SBATCH --output=/dev/null    ## (optional) delete .out files
     #SBATCH --time=12:00:00       ## HH:MM:SS
     #SBATCH --cpus-per-task=96    ## Build a computer with 96 cores
     #SBATCH --mem-per-cpu=2G      ## Build a computer with 192GB of RAM 
@@ -463,7 +462,6 @@ following, stored into a suitable `.slurm` file:
     #SBATCH --job-name="My simulation (array jobs, distributing conditions + replications)"
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=somewhere@out.there
-    #SBATCH --output=/dev/null    ## (optional) delete .out files
     #SBATCH --time=12:00:00       ## HH:MM:SS
     #SBATCH --mem-per-cpu=4G      ## 4GB of RAM per cpu
     #SBATCH --cpus-per-task=1
@@ -687,7 +685,6 @@ would work:
     #SBATCH --job-name="My simulation (arrays + multiple CPUs)"
     #SBATCH --mail-type=ALL
     #SBATCH --mail-user=somewhere@out.there
-    #SBATCH --output=/dev/null    ## (optional) delete .out files
     #SBATCH --time=04:00:00       ## HH:MM:SS
     #SBATCH --mem-per-cpu=4G      ## Build a computing cluster with 64GB of RAM 
     #SBATCH --cpus-per-task=16    ## 16 CPUs per array, likely built from 1 node
@@ -884,7 +881,7 @@ Missed
     1    10                1000               10000
     2    30                2000               10000
 
-#### Create new conditions for missing replications, and use `rbindDesign()`
+#### Create new conditions for missing replications, and use `rbind()`
 
 Next, build a new simulation structure containing only the missing
 information components.
@@ -929,8 +926,7 @@ object in its construction so that the internal `Design.ID` attributes
 are properly tracked.
 
 Finally, the new `subDesign` information is row-bound to the original
-expanded version using
-[`rbindDesign()`](http://philchalmers.github.io/SimDesign/reference/createDesign.md)
+expanded version using [`rbind()`](https://rdrr.io/r/base/cbind.html)
 with `keep.IDs = TRUE` (the default), though telling the scheduler to
 only evaluate these new rows in the `#SBATCH --array` specification.
 
@@ -969,7 +965,7 @@ table(replications_left)
 ``` r
 
 # new total design and replication objects
-Design_total <- rbindDesign(Design300, Design_left, keep.IDs=TRUE)
+Design_total <- rbind(Design300, Design_left, keep.IDs=TRUE)
 nrow(Design_total)
 ```
 
