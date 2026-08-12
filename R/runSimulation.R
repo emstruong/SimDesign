@@ -1679,9 +1679,14 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
         if(!useFuture){
             if(parallel){
                 if(is(cl, 'SimDesignMiraiLB')){
-                    # broadcast guarantees every daemon loads the packages
-                    mirai::everywhere(FUN(packages), FUN=load_packages,
-                                      packages=packages, .compute=cl$profile)
+                    # broadcast guarantees every daemon loads the packages; use
+                    # dotted carrier names removed in-expression so persistent
+                    # daemon global bindings cannot clobber user exports
+                    mirai::everywhere({
+                        .sd_loadpacks(.sd_packages)
+                        rm('.sd_loadpacks', '.sd_packages', envir = globalenv())
+                    }, .sd_loadpacks=load_packages, .sd_packages=packages,
+                       .compute=cl$profile)
                 } else {
                     parallel::parSapply(cl, 1L:(length(cl)*2),
                                         function(ind, packages) load_packages(packages),

@@ -861,7 +861,13 @@ LB_dispatch_job <- function(x){
 # compatibility layer. mirai's dispatcher, by contrast, holds queued tasks
 # centrally and assigns each to the next free daemon
 make_mirai_dispatcher <- function(ncores){
-    profile <- 'SimDesign.LB'
+    # unique per-call profile so a re-entrant runSimulation() (e.g., launched
+    # from a prepare()/summarise() definition) cannot tear down the daemons
+    # belonging to a still-active outer run
+    count <- if(is.null(.SIMDENV$LB_profile_count)) 1L
+        else .SIMDENV$LB_profile_count + 1L
+    .SIMDENV$LB_profile_count <- count
+    profile <- sprintf('SimDesign.LB.%i', count)
     # clear any stale daemons left over from an interrupted previous run
     try(mirai::daemons(0L, .compute = profile), silent = TRUE)
     mirai::daemons(ncores, dispatcher = TRUE, .compute = profile)
@@ -881,8 +887,14 @@ mirai_export <- function(cl, varlist, envir){
     if(!length(varlist)) return(invisible(NULL))
     objs <- lapply(varlist, function(nm) get(nm, envir = envir))
     names(objs) <- varlist
-    mirai::everywhere(list2env(OBJS, envir = globalenv()), OBJS = objs,
-                      .compute = cl$profile)
+    # everywhere() assigns its ... objects into the daemon global environments
+    # (persistently), which is also where the user's exports live; use a
+    # dotted carrier name that neither ls() discovery nor user code will
+    # collide with, and remove it in the same evaluation
+    mirai::everywhere({
+        list2env(.sd_exports, envir = globalenv())
+        rm('.sd_exports', envir = globalenv())
+    }, .sd_exports = objs, .compute = cl$profile)
     invisible(NULL)
 }
 
@@ -892,9 +904,14 @@ mirai_dispatchLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
     n <- length(X)
     val <- vector("list", n)
     if(n > 0L){
-        mirai::everywhere(STORE(ARGS), STORE = LB_store_args,
-                          ARGS = list(fun=fun, args=list(...)),
-                          .compute = cl$profile)
+        # rm() in-expression so the daemon global environments neither clobber
+        # same-named user exports nor retain a duplicate copy of the arguments;
+        # the working copy lives in each daemon's .SIMDENV until cleared below
+        mirai::everywhere({
+            .sd_store(.sd_args)
+            rm('.sd_store', '.sd_args', envir = globalenv())
+        }, .sd_store = LB_store_args, .sd_args = list(fun=fun, args=list(...)),
+           .compute = cl$profile)
         jobs <- lapply(seq_len(n), function(job)
             mirai::mirai(RUN(x), RUN = LB_dispatch_job,
                          x = list(index=X[[job]],
@@ -920,6 +937,15 @@ mirai_dispatchLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
             unres <- vapply(jobs, mirai::unresolved, logical(1L))
             if(progress) pbapply::setpb(pb, n - sum(unres))
             if(!any(unres)) break
+            # a resolved try-error is fatal (mainsim() internally retries the
+            # recoverable errors), so cancel the still-queued jobs rather than
+            # letting every remaining replication fail through max_errors
+            # generate/analyse attempts of its own before the failure surfaces
+            if(any(vapply(jobs[!unres], function(m) inherits(m$data, 'try-error'),
+                          logical(1L)))){
+                for(m in jobs[unres]) try(mirai::stop_mirai(m), silent = TRUE)
+                break
+            }
             connections <- try(mirai::status(.compute = cl$profile)$connections,
                                silent = TRUE)
             zero_count <- if(!is(connections, 'try-error') && isTRUE(connections == 0L))
@@ -932,7 +958,27 @@ mirai_dispatchLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
             Sys.sleep(.1)
         }
         val <- lapply(jobs, function(m) mirai::call_mirai(m)$data)
-        mirai::everywhere(STORE(NULL), STORE = LB_store_args, .compute = cl$profile)
+        mirai::everywhere({
+            .sd_store(NULL)
+            rm('.sd_store', envir = globalenv())
+        }, .sd_store = LB_store_args, .compute = cl$profile)
+        # report the original failure rather than the errorValue of a job that
+        # was cancelled above or lost with a dying daemon
+        real_errs <- vapply(val, inherits, logical(1L), what = 'miraiError')
+        if(any(real_errs))
+            stop('one node produced an error: ',
+                 as.character(val[[which(real_errs)[1L]]]), domain = NA, call. = FALSE)
+        # bare errorValues mean the daemon died mid-evaluation; phrase the
+        # message so the fatal-termination handler can extract the reason
+        lost <- vapply(val, function(x) inherits(x, 'errorValue') &&
+                           !inherits(x, 'miraiError'), logical(1L))
+        if(any(lost))
+            stop(paste0('One or more parallel daemons terminated while evaluating ',
+                        'replications. \n\nLast error message was: \n\n  ',
+                        'daemon connection lost (errorValue ',
+                        as.integer(val[[which(lost)[1L]]]),
+                        '), e.g., a worker crash via segfault or out-of-memory kill'),
+                 call. = FALSE)
     }
     checkForRemoteErrors.imp(val)
 }

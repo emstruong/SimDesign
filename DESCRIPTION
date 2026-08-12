@@ -54,7 +54,7 @@ Suggests:
     FrF2,
     rmarkdown,
     RPushbullet,
-    mirai,
+    mirai (>= 2.7.0),
     httr
 License: GPL (>=2)
 ByteCompile: yes
