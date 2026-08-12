@@ -1565,7 +1565,7 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
         if(!useFuture){
             export_fun <- if(is(cl, 'SimDesignMiraiLB')) mirai_export
                 else function(cl, varlist, envir) parallel::clusterExport(cl=cl, varlist, envir=envir)
-            export_fun(cl=cl, export_funs, envir = parent.frame(1L))
+            export_fun(cl=cl, export_funs, envir = attr(export_funs, 'envir'))
             if(!is.null(GENERATE_FUNCTIONS))
                 export_fun(cl=cl, "GENERATE_FUNCTIONS", envir = environment())
             export_fun(cl=cl, "ANALYSE_FUNCTIONS", envir = environment())

@@ -1,13 +1,34 @@
 .SIMDENV <- new.env(parent=emptyenv())
 
-# return a character vector of functions defined in .GlobalEnv
+# Return a character vector of functions defined in the calling stack frames,
+# with the discovered function objects captured in an 'envir' attribute.
+# Discovery walks the *call stack* (parent.frame(level:2)), yet the export
+# step historically resolved the returned names through a single frame's
+# *lexical* chain (envir = parent.frame(1L) at the clusterExport() call),
+# which errors with "object not found" when runSimulation() is reached
+# through a wrapper such as runArraySimulation() and the user's functions
+# live outside .GlobalEnv (e.g., defined within a function body or a
+# testthat block). Capturing the objects at discovery time keeps the
+# lookup and the export consistent
 parent_env_fun <- function(level=2){
     ret <- NULL
+    objs <- new.env(parent = emptyenv())
     for(lev in level:2){
         nms <- ls(envir = parent.frame(lev))
         is_fun <- sapply(nms, function(x, envir) is.function(get(x, envir=envir)),
                          envir = parent.frame(lev))
-        if(any(is_fun)) ret <- c(ret, nms[is_fun])
+        if(any(is_fun)){
+            ret <- c(ret, nms[is_fun])
+            # frames closer to the runSimulation() call take precedence
+            # over more distant ones when names are duplicated, matching
+            # the historical get() resolution order
+            for(nm in nms[is_fun])
+                assign(nm, get(nm, envir = parent.frame(lev)), envir = objs)
+        }
+    }
+    if(!is.null(ret)){
+        ret <- unique(ret)
+        attr(ret, 'envir') <- objs
     }
     ret
 }

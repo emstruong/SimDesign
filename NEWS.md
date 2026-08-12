@@ -33,6 +33,15 @@
 
 ## Changes in SimDesign 2.26
 
+- Fixed an `object not found` error when combining parallel processing with
+  user-defined functions that live outside of `.GlobalEnv` (e.g., defined
+  inside a function body or a `testthat` block) while `runSimulation()` is
+  reached through a wrapper such as `runArraySimulation()` or `SimSolve()`.
+  The exportable functions were discovered by walking the calling stack, yet
+  the subsequent `clusterExport()` resolved those names through a single
+  frame's lexical chain, where they need not be visible; the function objects
+  are now captured at discovery time and exported directly
+
 - `verbose` option in `runArraySimulation()` now prints extract QOL information
   about SLURM clusters (e.g., requested RAM, cores, IDs, etc), and about
   the indexed information from the `arrayID`
