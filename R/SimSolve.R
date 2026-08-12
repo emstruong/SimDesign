@@ -618,7 +618,8 @@ SimSolve <- function(design, interval, b, generate, analyse, summarise,
             on.exit(parallel::stopCluster(cl), add = TRUE)
         }
         if(!useFuture){
-            parallel::clusterExport(cl=cl, export_funs, envir = parent.frame(1L))
+            parallel::clusterExport(cl=cl, export_funs,
+                                    envir = attr(export_funs, 'envir'))
             parallel::clusterExport(cl=cl, "ANALYSE_FUNCTIONS", envir = environment())
             if(verbose > 0 && verbose < 2)
                 message(sprintf("\nNumber of cores used in cluster: %i", length(cl)))

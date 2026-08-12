@@ -254,3 +254,30 @@ test_that('array', {
 
 })
 
+
+test_that('parallel arrays export non-global user functions', {
+
+    library(SimDesign)
+
+    # functions here live in the test_that() frame, not .GlobalEnv; the
+    # parallel export must resolve them from the frames in which they were
+    # discovered rather than through the wrapper's lexical chain
+    Design <- createDesign(N = c(10, 20))
+    gen_helper <- function(N) rnorm(N)
+    Generate <- function(condition, fixed_objects) gen_helper(condition$N)
+    Analyse <- function(condition, dat, fixed_objects) c(mean = mean(dat))
+    Summarise <- function(condition, results, fixed_objects)
+        c(mu = mean(results[, "mean"]))
+
+    tmpdir <- tempfile()
+    dir.create(tmpdir)
+    owd <- setwd(tmpdir)
+    on.exit(setwd(owd), add = TRUE)
+    arr <- runArraySimulation(Design, replications = 2, generate = Generate,
+                              analyse = Analyse, summarise = Summarise,
+                              iseed = 1234, arrayID = 1, filename = 'arr',
+                              parallel = TRUE, ncores = 2, verbose = FALSE)
+    expect_true(is.finite(arr$mu))
+    SimClean(dir())
+
+})

@@ -1531,7 +1531,8 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
             }
         }
         if(!useFuture){
-            parallel::clusterExport(cl=cl, export_funs, envir = parent.frame(1L))
+            parallel::clusterExport(cl=cl, export_funs,
+                                    envir = attr(export_funs, 'envir'))
             if(!is.null(GENERATE_FUNCTIONS))
                 parallel::clusterExport(cl=cl, "GENERATE_FUNCTIONS", envir = environment())
             parallel::clusterExport(cl=cl, "ANALYSE_FUNCTIONS", envir = environment())
