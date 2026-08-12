@@ -450,5 +450,13 @@ mainsim_maxtime <- function(max_time, max_time.start, ...){
     out <- R.utils::withTimeout(mainsim(...),
                                 timeout = time_left,
                                 onTimeout = 'warning')
+    # withTimeout() returns NULL when the limit interrupts the replication
+    # mid-run; treat this the same as the pre-check above so that the
+    # timed-out filter in Analysis() removes it (a surviving NULL corrupts
+    # the results list and terminates with "subscript out of bounds")
+    if(is.null(out)){
+        out <- NA
+        class(out) <- 'timed_out'
+    }
     out
 }

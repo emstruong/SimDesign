@@ -27,6 +27,14 @@
   `.Random.seed` to its local frame rather than `.GlobalEnv`, so the RNG state
   was silently discarded. The parallel path was unaffected
 
+- Fixed crashes when `control$max_time` interrupts execution: a replication
+  interrupted mid-run yielded a `NULL` result that corrupted the results list
+  (`subscript out of bounds` during attribute cleanup), and a design condition
+  whose replications all timed out crashed the aggregation instead of
+  returning. Interrupted replications are now classed as timed-out like the
+  pre-check path, and a fully timed-out condition returns a
+  `FATAL_TERMINATION` placeholder row so partial simulation results survive
+
 ## Changes in SimDesign 2.25
 
 - `SimErrors()` and `SimWarnings()`  functions added to better track and 
