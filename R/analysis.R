@@ -7,7 +7,8 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
                      allow_na, allow_nan, use_try, stop_on_fatal, store_warning_seeds,
                      include_replication_index, packages, .options.mpi, useFuture, multirow,
                      allow_gen_errors, max_time.start, max_time, max_RAM, store_Random.seeds, useGenerate,
-                     useAnalyseHandler, save_results_filename = NULL, arrayID = NULL)
+                     useAnalyseHandler, save_results_filename = NULL, arrayID = NULL,
+                     use_load_balancing = TRUE)
 {
     # This defines the work-flow for the Monte Carlo simulation given the condition (row in Design)
     #  and number of replications desired
@@ -96,7 +97,12 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
                                                    max_time.start=max_time.start, max_time=max_time,
                                                    include_replication_index=include_replication_index,
                                                    allow_na=allow_na, allow_nan=allow_nan, use_try=use_try,
-                                                   p=p, future.seed=TRUE, allow_gen_errors=allow_gen_errors),
+                                                   p=p, future.seed=TRUE, allow_gen_errors=allow_gen_errors,
+                                                   # single-element chunks so replications are dispatched to
+                                                   # workers as they free up rather than pre-scheduled in
+                                                   # nbrOfWorkers() blocks; RNG unaffected as future.seed=TRUE
+                                                   # assigns seeds per element, not per chunk
+                                                   future.chunk.size=if(use_load_balancing) 1L else NULL),
                        silent=TRUE)
     } else if(is.null(cl)){
         if(!is.null(seed)) set_seed(seed)
@@ -143,6 +149,41 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
             stop('MPI structure no longer supported. Please use the parallel = \"future" approach',
                  call. = FALSE)
         } else {
+            # clusters built with mirai::make_cluster() are dispatcher-less, and
+            # since their tasks are distributed round-robin (possibly queuing
+            # behind a busy daemon) dynamic scheduling is not possible; internally
+            # defined mirai daemons avoid this via make_mirai_dispatcher(), though
+            # user-defined miraiCluster objects must fall back to static scheduling
+            if(use_load_balancing && is(cl, 'miraiCluster'))
+                use_load_balancing <- FALSE
+            if(use_load_balancing){
+                # Replications are dispatched dynamically: each is sent to the
+                # next available worker so that replications with heterogeneous
+                # run-times do not leave the remaining workers idle. RNG streams
+                # are therefore assigned per *replication* rather than per
+                # worker node, making the results reproducible regardless of
+                # the number of cores or the job completion order
+                rng_seeds <- if(!is.null(seed))
+                    gen_replication_RNGseeds(seed=seed, replications=replications)
+                else NULL
+                LBdispatch <- if(is(cl, 'SimDesignMiraiLB'))
+                    mirai_dispatchLapply else dynamicClusterLapply
+                results <- try(LBdispatch(cl, 1L:replications, used_mainsim,
+                                        rng_seeds=rng_seeds, progress=progress,
+                                        condition.row=condition.row,
+                                    condition=condition, generate=Functions$generate,
+                                    analyse=Functions$analyse, load_seed=load_seed,
+                                    store_Random.seeds=store_Random.seeds, logging=logging,
+                                    fixed_objects=fixed_objects, save=save, useGenerate=useGenerate,
+                                    save_results_out_rootdir=save_results_out_rootdir,
+                                    max_errors=max_errors, store_warning_seeds=store_warning_seeds,
+                                    save_seeds=save_seeds, save_seeds_dirname=save_seeds_dirname,
+                                    warnings_as_errors=warnings_as_errors, allow_na=allow_na,
+                                    include_replication_index=include_replication_index,
+                                    allow_nan=allow_nan, allow_gen_errors=allow_gen_errors,
+                                    max_time.start=max_time.start, max_time=max_time,
+                                    useAnalyseHandler=useAnalyseHandler, use_try=use_try), TRUE)
+            } else {
             if(!is.null(seed)){
                 if(is.list(seed)){
                     clusterSetRNGSubStream(cl=cl, seed=seed)
@@ -178,6 +219,7 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
                                     allow_nan=allow_nan, allow_gen_errors=allow_gen_errors,
                                     max_time.start=max_time.start, max_time=max_time,
                                     useAnalyseHandler=useAnalyseHandler, use_try=use_try), TRUE)
+            }
             }
         }
     }

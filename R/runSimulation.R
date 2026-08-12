@@ -412,6 +412,29 @@
 #'       Set this to \code{FALSE} for parallel behavior prior to \code{SimDesign} version 2.25. Note that
 #'       if \code{mirai} is not available then the \code{parallel} package will be used by default instead}
 #'
+#'     \item{\code{use_load_balancing}}{logical (default is \code{TRUE}); should replications
+#'       be dispatched to the parallel workers dynamically (i.e., load balanced)? When \code{TRUE}
+#'       each replication is sent to the next available worker as soon as it completes its
+#'       previous replication, which avoids idle cores when the replications have
+#'       heterogeneous run-times (e.g., a single slow replication no longer stalls the
+#'       remaining workers). To keep the simulation reproducible under this dynamic scheduling
+#'       the supplied \code{seed} is expanded into one L'Ecuyer-CMRG stream (or sub-stream,
+#'       for the list-based seeds used by \code{\link{runArraySimulation}}) per
+#'       \emph{replication} rather than per worker node, and therefore the results are
+#'       identical regardless of the number of cores used (though they will differ from
+#'       runs performed with \code{use_load_balancing = FALSE}, whose seeding is tied to the
+#'       worker nodes). Applies to \code{parallel = TRUE} cluster computations and, via
+#'       single-element chunking (\code{future.chunk.size = 1}), to
+#'       \code{parallel = 'future'} (in the \code{future} case the results are unaffected
+#'       by this flag since \code{future.seed = TRUE} already assigns seeds per replication).
+#'       Note that when \code{mirai} is used the daemons are launched with mirai's
+#'       dispatcher, which performs the load balancing natively; however, user-supplied
+#'       \code{cl} objects built with \code{\link[mirai]{make_cluster}} are dispatcher-less
+#'       and will silently fall back to the static scheduling approach (supply
+#'       \code{ncores} instead to obtain load balancing with \code{mirai}).
+#'       Set to \code{FALSE} for the static scheduling behavior of
+#'       \code{SimDesign} versions prior to 2.27}
+#'
 #'     \item{\code{stop_on_fatal}}{logical (default is \code{FALSE}); should the simulation be
 #'       terminated immediately when
 #'       the maximum number of consecutive errors (\code{max_errors}) is reached? If \code{FALSE},
@@ -1191,6 +1214,7 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
     }
     if(is.null(control$use_mirai)) control$use_mirai <- TRUE
     if(!requireNamespace("mirai", quietly = TRUE)) control$use_mirai <- FALSE
+    if(is.null(control$use_load_balancing)) control$use_load_balancing <- TRUE
     if(is.null(control$global_fun_level)) control$global_fun_level <- 2
     if(is.null(control$useAnalyseHandler)) control$useAnalyseHandler <- TRUE
     useAnalyseHandler <- control$useAnalyseHandler
@@ -1522,8 +1546,16 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
         if(!useFuture && is.null(cl)){
             if(control$use_mirai){
                 if(requireNamespace("mirai", quietly = TRUE)){
-                    cl <- mirai::make_cluster(ncores)
-                    on.exit(mirai::stop_cluster(cl), add = TRUE)
+                    if(control$use_load_balancing){
+                        # mirai::make_cluster() objects are dispatcher-less and
+                        # therefore cannot load balance; use dispatcher-backed
+                        # daemons via mirai's native interface instead
+                        cl <- make_mirai_dispatcher(ncores)
+                        on.exit(stop_mirai_dispatcher(cl), add = TRUE)
+                    } else {
+                        cl <- mirai::make_cluster(ncores)
+                        on.exit(mirai::stop_cluster(cl), add = TRUE)
+                    }
                 }
             } else {
                 cl <- parallel::makeCluster(ncores, type=type)
@@ -1531,13 +1563,15 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
             }
         }
         if(!useFuture){
-            parallel::clusterExport(cl=cl, export_funs, envir = parent.frame(1L))
+            export_fun <- if(is(cl, 'SimDesignMiraiLB')) mirai_export
+                else function(cl, varlist, envir) parallel::clusterExport(cl=cl, varlist, envir=envir)
+            export_fun(cl=cl, export_funs, envir = parent.frame(1L))
             if(!is.null(GENERATE_FUNCTIONS))
-                parallel::clusterExport(cl=cl, "GENERATE_FUNCTIONS", envir = environment())
-            parallel::clusterExport(cl=cl, "ANALYSE_FUNCTIONS", envir = environment())
-            parallel::clusterExport(cl=cl, "TRY_ALL_ANALYSE", envir = environment())
+                export_fun(cl=cl, "GENERATE_FUNCTIONS", envir = environment())
+            export_fun(cl=cl, "ANALYSE_FUNCTIONS", envir = environment())
+            export_fun(cl=cl, "TRY_ALL_ANALYSE", envir = environment())
             if(!is.null(prepare))
-                parallel::clusterExport(cl=cl, "prepare", envir = environment())
+                export_fun(cl=cl, "prepare", envir = environment())
             if(verbose)
                 message(sprintf("\nNumber of cores used in cluster: %i", length(cl)))
         }
@@ -1637,9 +1671,15 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
         if(!length(tmp)) tmp <- 'stats'
         if(!useFuture){
             if(parallel){
-                parallel::parSapply(cl, 1L:(length(cl)*2),
-                                    function(ind, packages) load_packages(packages),
-                                    packages=packages)
+                if(is(cl, 'SimDesignMiraiLB')){
+                    # broadcast guarantees every daemon loads the packages
+                    mirai::everywhere(FUN(packages), FUN=load_packages,
+                                      packages=packages, .compute=cl$profile)
+                } else {
+                    parallel::parSapply(cl, 1L:(length(cl)*2),
+                                        function(ind, packages) load_packages(packages),
+                                        packages=packages)
+                }
             }
         } else {
             future.apply::future_lapply(1L:(future::nbrOfWorkers()*2),
@@ -1651,8 +1691,13 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                 try(future.apply::future_lapply(rep(tmp[i], each=future::nbrOfWorkers()*2),
                                             get_packages))
                 } else if(parallel){
-                try(table(parallel::parSapply(cl, rep(tmp[i], each=length(cl)*2),
-                                              get_packages)))
+                if(is(cl, 'SimDesignMiraiLB')){
+                    try(table(unlist(mirai::mirai_map(rep(tmp[i], each=length(cl)*2),
+                                                      get_packages, .compute=cl$profile)[])))
+                } else {
+                    try(table(parallel::parSapply(cl, rep(tmp[i], each=length(cl)*2),
+                                                  get_packages)))
+                }
             }
             if(tmp[i] == 'stats') next
             if(length(packs) > 1L)
@@ -1714,7 +1759,8 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                                          warnings_as_errors=warnings_as_errors,
                                          progress=progress, store_results=FALSE, use_try=use_try,
                                          stop_on_fatal=stop_on_fatal, max_time=max_time, max_RAM=max_RAM,
-                                         allow_gen_errors=!SimSolveRun, logging=control$logging)
+                                         allow_gen_errors=!SimSolveRun, logging=control$logging,
+                                         use_load_balancing=control$use_load_balancing)
             time1 <- proc.time()[3L]
             stored_time <- stored_time + (time1 - time0)
         } else {
@@ -1758,7 +1804,8 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                             warnings_as_errors=warnings_as_errors,
                             progress=progress, store_results=store_results, use_try=use_try,
                             stop_on_fatal=stop_on_fatal, max_time=max_time, max_RAM=max_RAM,
-                            allow_gen_errors=!SimSolveRun, logging=control$logging)
+                            allow_gen_errors=!SimSolveRun, logging=control$logging,
+                            use_load_balancing=control$use_load_balancing)
             if(SimSolveRun){
                 full_results <- attr(tmp, 'full_results')
                 condition <- if(was_tibble) dplyr::as_tibble(design[i,]) else design[i,]

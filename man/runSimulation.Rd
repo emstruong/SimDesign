@@ -479,6 +479,29 @@ in the simulation}
       Set this to \code{FALSE} for parallel behavior prior to \code{SimDesign} version 2.25. Note that
       if \code{mirai} is not available then the \code{parallel} package will be used by default instead}
 
+    \item{\code{use_load_balancing}}{logical (default is \code{TRUE}); should replications
+      be dispatched to the parallel workers dynamically (i.e., load balanced)? When \code{TRUE}
+      each replication is sent to the next available worker as soon as it completes its
+      previous replication, which avoids idle cores when the replications have
+      heterogeneous run-times (e.g., a single slow replication no longer stalls the
+      remaining workers). To keep the simulation reproducible under this dynamic scheduling
+      the supplied \code{seed} is expanded into one L'Ecuyer-CMRG stream (or sub-stream,
+      for the list-based seeds used by \code{\link{runArraySimulation}}) per
+      \emph{replication} rather than per worker node, and therefore the results are
+      identical regardless of the number of cores used (though they will differ from
+      runs performed with \code{use_load_balancing = FALSE}, whose seeding is tied to the
+      worker nodes). Applies to \code{parallel = TRUE} cluster computations and, via
+      single-element chunking (\code{future.chunk.size = 1}), to
+      \code{parallel = 'future'} (in the \code{future} case the results are unaffected
+      by this flag since \code{future.seed = TRUE} already assigns seeds per replication).
+      Note that when \code{mirai} is used the daemons are launched with mirai's
+      dispatcher, which performs the load balancing natively; however, user-supplied
+      \code{cl} objects built with \code{\link[mirai]{make_cluster}} are dispatcher-less
+      and will silently fall back to the static scheduling approach (supply
+      \code{ncores} instead to obtain load balancing with \code{mirai}).
+      Set to \code{FALSE} for the static scheduling behavior of
+      \code{SimDesign} versions prior to 2.27}
+
     \item{\code{stop_on_fatal}}{logical (default is \code{FALSE}); should the simulation be
       terminated immediately when
       the maximum number of consecutive errors (\code{max_errors}) is reached? If \code{FALSE},

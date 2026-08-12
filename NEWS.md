@@ -1,5 +1,36 @@
 # NEWS file for SimDesign
 
+## Changes in SimDesign 2.27
+
+- Parallel replications are now dispatched with dynamic load balancing by
+  default (`control` list element `use_load_balancing = TRUE`). Previously,
+  replications were statically pre-scheduled into `ncores` blocks
+  (`parLapply()`), or dispatched in batches of `ncores` with a synchronization
+  barrier between batches when the progress bar was active (`pblapply()`),
+  meaning a single slow replication would leave the remaining workers idle
+  until it completed. Each replication is now sent to the next available
+  worker as soon as one frees up (supported by both the `mirai` and
+  `parallel` defined clusters), and the invariant simulation arguments
+  are exported to the workers once per condition rather than re-serialized
+  with every dispatch
+
+- Because dynamic scheduling makes the replication-to-worker assignment
+  timing dependent, RNG streams are now assigned per *replication* rather
+  than per worker node (via `parallel::nextRNGStream()` for integer `seed`
+  inputs, or `parallel::nextRNGSubStream()` within the condition's existing
+  stream for the list-based seeds of `runArraySimulation(..., iseed)`). A
+  welcome side effect is that seeded parallel simulations are now
+  reproducible regardless of the number of cores used, not just when
+  `ncores` is held constant. Note, however, that exact numerical results
+  will differ from those obtained with previous versions of the package;
+  use `control = list(use_load_balancing = FALSE)` to restore the legacy
+  static scheduling and per-worker seeding
+
+- `parallel = 'future'` execution now uses single-element chunking
+  (`future.chunk.size = 1`) by default so that replications are similarly
+  load balanced across workers; results are unaffected in this case since
+  `future.seed = TRUE` already pre-assigns seeds per replication
+
 ## Changes in SimDesign 2.26
 
 - `verbose` option in `runArraySimulation()` now prints extract QOL information

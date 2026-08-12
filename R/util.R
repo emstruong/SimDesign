@@ -785,6 +785,166 @@ clusterSetRNGSubStream <- function(cl, seed){
 sendCall.imp <- utils::getFromNamespace('sendCall', 'parallel')
 checkForRemoteErrors.imp <- utils::getFromNamespace('checkForRemoteErrors',
                                                     'parallel')
+recvOneResult.imp <- utils::getFromNamespace('recvOneResult', 'parallel')
+
+# Generate one L'Ecuyer-CMRG .Random.seed state per replication. Scalar seeds
+# are expanded into successive streams (analogous to clusterSetRNGStream(),
+# but over replications rather than nodes), while list seeds (which already
+# contain a stream state; see genSeeds(iseed)) are expanded into sub-streams
+# within that stream (analogous to clusterSetRNGSubStream()) so that streams
+# distributed across conditions/arrays remain non-overlapping
+gen_replication_RNGseeds <- function(seed, replications){
+    seeds <- vector("list", replications)
+    if(is.list(seed)){
+        seeds[[1L]] <- seed[[1L]]
+        for(i in seq_len(replications - 1L))
+            seeds[[i + 1L]] <- parallel::nextRNGSubStream(seeds[[i]])
+    } else {
+        oldseed <- if(exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE) else NULL
+        rngkind <- RNGkind()
+        RNGkind("L'Ecuyer-CMRG")
+        set.seed(seed)
+        seeds[[1L]] <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+        for(i in seq_len(replications - 1L))
+            seeds[[i + 1L]] <- parallel::nextRNGStream(seeds[[i]])
+        if(!is.null(oldseed)){
+            assign(".Random.seed", oldseed, envir = .GlobalEnv)
+        } else {
+            RNGkind(rngkind[1L])
+            set.seed(NULL)
+        }
+    }
+    seeds
+}
+
+# Worker-side receiver for LB_dispatch_job(): the invariant arguments are
+# stored once per node (see dynamicClusterLapply()) so that each dispatched
+# job only carries its replication index and RNG state
+LB_store_args <- function(args){
+    .SIMDENV$LB_args <- args
+    invisible(NULL)
+}
+
+LB_dispatch_job <- function(x){
+    if(!is.null(x$rng_seed))
+        assign(".Random.seed", x$rng_seed, envir = .GlobalEnv)
+    do.call(.SIMDENV$LB_args$fun, c(list(x$index), .SIMDENV$LB_args$args))
+}
+
+# Dispatcher-backed mirai daemons for load-balanced dispatching. The
+# miraiCluster objects from mirai::make_cluster() are hard-coded to
+# dispatcher=FALSE, in which case tasks are distributed round-robin at the
+# socket level and can queue behind a busy daemon even when other daemons are
+# free, making true load balancing impossible through the parallel-API
+# compatibility layer. mirai's dispatcher, by contrast, holds queued tasks
+# centrally and assigns each to the next free daemon
+make_mirai_dispatcher <- function(ncores){
+    profile <- 'SimDesign.LB'
+    # clear any stale daemons left over from an interrupted previous run
+    try(mirai::daemons(0L, .compute = profile), silent = TRUE)
+    mirai::daemons(ncores, dispatcher = TRUE, .compute = profile)
+    structure(list(profile = profile, ncores = ncores),
+              class = 'SimDesignMiraiLB')
+}
+
+stop_mirai_dispatcher <- function(cl)
+    try(mirai::daemons(0L, .compute = cl$profile), silent = TRUE)
+
+length.SimDesignMiraiLB <- function(x) x$ncores
+
+# everywhere()-based analogue of parallel::clusterExport(); broadcast is
+# guaranteed to reach every daemon, which per-node sends are not once the
+# dispatcher (rather than the node object) decides task placement
+mirai_export <- function(cl, varlist, envir){
+    if(!length(varlist)) return(invisible(NULL))
+    objs <- lapply(varlist, function(nm) get(nm, envir = envir))
+    names(objs) <- varlist
+    mirai::everywhere(list2env(OBJS, envir = globalenv()), OBJS = objs,
+                      .compute = cl$profile)
+    invisible(NULL)
+}
+
+# native-mirai analogue of dynamicClusterLapply(); all jobs are queued with
+# the dispatcher up-front, which streams them to daemons as they free up
+mirai_dispatchLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = FALSE){
+    n <- length(X)
+    val <- vector("list", n)
+    if(n > 0L){
+        mirai::everywhere(STORE(ARGS), STORE = LB_store_args,
+                          ARGS = list(fun=fun, args=list(...)),
+                          .compute = cl$profile)
+        jobs <- lapply(seq_len(n), function(job)
+            mirai::mirai(RUN(x), RUN = LB_dispatch_job,
+                         x = list(index=X[[job]],
+                                  rng_seed=if(is.null(rng_seeds)) NULL
+                                           else rng_seeds[[job]]),
+                         .compute = cl$profile))
+        if(progress){
+            pb <- pbapply::startpb(0, n)
+            on.exit(pbapply::closepb(pb), add = TRUE)
+            repeat{
+                ndone <- n - sum(vapply(jobs, mirai::unresolved, logical(1L)))
+                pbapply::setpb(pb, ndone)
+                if(ndone == n) break
+                Sys.sleep(.1)
+            }
+        }
+        val <- lapply(jobs, function(m) mirai::call_mirai(m)$data)
+        mirai::everywhere(STORE(NULL), STORE = LB_store_args, .compute = cl$profile)
+    }
+    checkForRemoteErrors.imp(val)
+}
+
+# Load-balanced alternative to parallel::parLapply() with optional
+# per-replication RNG states and pbapply-based progress reporting. Each
+# element of X is dispatched to a node as soon as that node finishes its
+# previous job (cf. parallel:::dynamicClusterApply()), so replications with
+# heterogeneous run-times no longer leave the remaining workers idle, which
+# occurs with statically scheduled dispatches (parLapply()) and
+# batch-synchronized progress dispatches (pblapply(cl=))
+dynamicClusterLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = FALSE){
+    n <- length(X)
+    p <- length(cl)
+    val <- vector("list", n)
+    if(n > 0L && p > 0L){
+        parallel::clusterCall(cl, LB_store_args, list(fun=fun, args=list(...)))
+        on.exit(try(parallel::clusterCall(cl, LB_store_args, NULL), silent = TRUE),
+                add = TRUE)
+        submit <- function(node, job)
+            sendCall.imp(cl[[node]], LB_dispatch_job,
+                         list(list(index=X[[job]],
+                                   rng_seed=if(is.null(rng_seeds)) NULL
+                                            else rng_seeds[[job]])),
+                         tag = job)
+        pb <- NULL
+        if(progress){
+            pb <- pbapply::startpb(0, n)
+            on.exit(pbapply::closepb(pb), add = TRUE)
+        }
+        outstanding <- min(n, p)
+        for(i in seq_len(outstanding)) submit(i, i)
+        nxt <- outstanding + 1L
+        done <- 0L
+        had_error <- FALSE
+        while(outstanding > 0L){
+            d <- recvOneResult.imp(cl)
+            outstanding <- outstanding - 1L
+            done <- done + 1L
+            val[d$tag] <- list(d$value)
+            # a try-error here is fatal (mainsim() internally retries recoverable
+            # errors), so stop dispatching new jobs and drain the active ones
+            if(inherits(d$value, 'try-error')) had_error <- TRUE
+            if(!had_error && nxt <= n){
+                submit(d$node, nxt)
+                nxt <- nxt + 1L
+                outstanding <- outstanding + 1L
+            }
+            if(progress) pbapply::setpb(pb, done)
+        }
+    }
+    checkForRemoteErrors.imp(val)
+}
 
 valid_results <- function(x)
     is(x, 'numeric') || is(x, 'data.frame') || is(x, 'list') || is(x, 'logical') || is(x, 'try-error')
@@ -1063,7 +1223,7 @@ valid_control.list <- function()
       "allow_na", "allow_nan", "type", "print_RAM", "max_time", "max_RAM",
       "tol", "summarise.reg_data", "rel.tol", "k.success", "interpolate.R", "bolster",
       "include_reps", 'global_fun_level', 'useAnalyseHandler', 'max_time.start', 'logging',
-      'use_mirai')
+      'use_mirai', 'use_load_balancing')
 
 valid_save_details.list <- function()
     c("safe", "compname", "out_rootdir", "save_results_dirname", "save_results_filename",
