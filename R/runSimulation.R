@@ -1558,8 +1558,15 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                     }
                 }
             } else {
+                # flush pending finalizers first: connection objects from
+                # since-released clusters otherwise risk being garbage
+                # collected mid-run, where closing their stale (and possibly
+                # re-used) connection slots severs the new workers' sockets
+                gc(verbose = FALSE)
                 cl <- parallel::makeCluster(ncores, type=type)
-                on.exit(parallel::stopCluster(cl), add = TRUE)
+                # try() so that a dead worker node at teardown cannot raise
+                # an uncaught error that discards the assembled results
+                on.exit(try(parallel::stopCluster(cl), silent = TRUE), add = TRUE)
             }
         }
         if(!useFuture){

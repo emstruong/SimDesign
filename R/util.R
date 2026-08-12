@@ -901,15 +901,35 @@ mirai_dispatchLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
                                   rng_seed=if(is.null(rng_seeds)) NULL
                                            else rng_seeds[[job]]),
                          .compute = cl$profile))
+        pb <- NULL
         if(progress){
             pb <- pbapply::startpb(0, n)
             on.exit(pbapply::closepb(pb), add = TRUE)
-            repeat{
-                ndone <- n - sum(vapply(jobs, mirai::unresolved, logical(1L)))
-                pbapply::setpb(pb, ndone)
-                if(ndone == n) break
-                Sys.sleep(.1)
+        }
+        # Wait with a daemon-liveness watchdog rather than blocking in
+        # call_mirai(). The dispatcher resolves *in-flight* tasks to error
+        # values when their daemon dies, but tasks still centrally queued
+        # when the last daemon dies would remain unresolved forever (e.g.,
+        # replications that crash their worker process through segfaulting
+        # compiled code or OOM kills), hanging the master R session. The
+        # zero-connection state must persist across consecutive checks
+        # before aborting since daemons may not have connected yet when
+        # the first jobs are queued
+        zero_count <- 0L
+        repeat{
+            unres <- vapply(jobs, mirai::unresolved, logical(1L))
+            if(progress) pbapply::setpb(pb, n - sum(unres))
+            if(!any(unres)) break
+            connections <- try(mirai::status(.compute = cl$profile)$connections,
+                               silent = TRUE)
+            zero_count <- if(!is(connections, 'try-error') && isTRUE(connections == 0L))
+                zero_count + 1L else 0L
+            if(zero_count >= 100L){    # ~10 seconds with no live daemons
+                for(m in jobs[unres]) try(mirai::stop_mirai(m), silent = TRUE)
+                stop(sprintf('all %i mirai daemons terminated while %i replication(s) remained unevaluated',
+                             cl$ncores, sum(unres)), call.=FALSE)
             }
+            Sys.sleep(.1)
         }
         val <- lapply(jobs, function(m) mirai::call_mirai(m)$data)
         mirai::everywhere(STORE(NULL), STORE = LB_store_args, .compute = cl$profile)
@@ -930,8 +950,16 @@ dynamicClusterLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
     val <- vector("list", n)
     if(n > 0L && p > 0L){
         parallel::clusterCall(cl, LB_store_args, list(fun=fun, args=list(...)))
-        on.exit(try(parallel::clusterCall(cl, LB_store_args, NULL), silent = TRUE),
-                add = TRUE)
+        # Only clean up the worker-side state after a successful drain. If a
+        # worker died mid-run the sockets are in an undefined state, and the
+        # write performed here would consume the single post-close write that
+        # succeeds silently, poisoning the later stopCluster() call with an
+        # uncaught SIGPIPE error that discards runSimulation()'s fully
+        # assembled return value
+        drained <- FALSE
+        on.exit(if(drained)
+            try(parallel::clusterCall(cl, LB_store_args, NULL), silent = TRUE),
+            add = TRUE)
         submit <- function(node, job)
             sendCall.imp(cl[[node]], LB_dispatch_job,
                          list(list(index=X[[job]],
@@ -963,6 +991,7 @@ dynamicClusterLapply <- function(cl, X, fun, ..., rng_seeds = NULL, progress = F
             }
             if(progress) pbapply::setpb(pb, done)
         }
+        drained <- TRUE
     }
     checkForRemoteErrors.imp(val)
 }
