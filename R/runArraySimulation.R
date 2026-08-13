@@ -351,7 +351,9 @@ runArraySimulation <- function(design, ..., replications,
         filename <- gsub("//", "/", filename)
     }
     save_details$arrayID <- arrayID
-    max_time.start <- proc.time()[3L]
+    # wall-clock reference (see runSimulation()); ensures the max_time budget
+    # spans all rowpick conditions and remains valid on parallel workers
+    max_time.start <- Sys.time()
     if(!is.null(control$max_time))
         control$max_time.start <- max_time.start
     SLURM <- Sys.getenv('SLURM_JOB_ID') != ""

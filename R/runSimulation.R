@@ -535,8 +535,15 @@
 #'        See \code{\link{timeFormater}} for the input specifications; otherwise, can be
 #'        specified as a \code{numeric} input reflecting the maximum time in seconds.
 #'
-#'        Note that when \code{parallel = TRUE} the \code{max_time} can only be checked on
-#'        a per condition basis.
+#'        The deadline is enforced per replication against wall-clock time
+#'        (including on parallel workers): replications that have not started by the
+#'        deadline are skipped, a replication in progress is interrupted at the
+#'        deadline and discarded as timed-out, and the completed replications are
+#'        returned. This keeps terminations as prompt as possible when an external
+#'        scheduler (e.g., SLURM) will forcibly kill the job at its allocation limit,
+#'        though note that R can only interrupt code at interpreter checkpoints, so
+#'        a replication executing long-running compiled code may still overrun the
+#'        deadline until control returns to R.
 #'      }
 #'
 #'      \item{\code{max_RAM}}{
@@ -1178,8 +1185,10 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                           verbose = interactive())
 {
     if(!verbose) verbose <- on_HPC.cluster()
+    # wall-clock reference so that max_time deadlines remain valid on
+    # parallel workers, whose own proc.time() clocks start at process launch
     max_time.start <- if(is.null(control$max_time.start))
-        proc.time()[3L] else control$max_time.start
+        Sys.time() else control$max_time.start
     stopifnot(!missing(analyse))
     if(length(control)){
         stopifnot("Argument(s) to control list invalid"=

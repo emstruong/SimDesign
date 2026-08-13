@@ -35,6 +35,18 @@
   pre-check path, and a fully timed-out condition returns a
   `FATAL_TERMINATION` placeholder row so partial simulation results survive
 
+- `control$max_time` deadlines are now enforced reliably on parallel workers.
+  Previously the reference point was a `proc.time()` offset from the master
+  process, which is meaningless against a freshly spawned worker's own
+  process clock, so workers could evaluate replications well past the
+  deadline (risking hard external terminations, e.g. by SLURM, before
+  results were saved). The reference is now a wall-clock timestamp
+  (`Sys.time()`). Additionally, a time-limit interruption that lands inside
+  the internal `try()` wrappers no longer counts as a recoverable
+  generate/analyse error: previously the caught interrupt cleared the
+  transient time limit and the retry ran unbounded, allowing a single
+  replication to overrun `max_time` by up to its full run-time
+
 ## Changes in SimDesign 2.25
 
 - `SimErrors()` and `SimWarnings()`  functions added to better track and 
