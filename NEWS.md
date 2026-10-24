@@ -7,6 +7,10 @@
   results were saved with `save_results = TRUE` alongside
   `store_results = TRUE`
 
+- `runArraySimulation()` now actually defaults to `progress = FALSE`, as
+  documented in the 2.28 release notes (the function signature still
+  defaulted to `TRUE`)
+
 ## Changes in SimDesign 2.28
 
 - In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 

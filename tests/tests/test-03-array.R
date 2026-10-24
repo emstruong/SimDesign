@@ -300,3 +300,9 @@ test_that('lists', {
 
 })
 
+
+test_that('runArraySimulation progress default', {
+    # array jobs are timed and logged non-interactively, so the progress bar
+    # is disabled by default (see discussion in #101)
+    expect_false(formals(SimDesign::runArraySimulation)$progress)
+})

@@ -20,7 +20,7 @@ runArraySimulation(
   save_details = list(),
   control = list(),
   verbose,
-  progress = TRUE
+  progress = FALSE
 )
 }
 \arguments{

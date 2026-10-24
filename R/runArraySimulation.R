@@ -316,7 +316,7 @@ runArraySimulation <- function(design, ..., replications,
                                parallel = FALSE, cl = NULL,
                                ncores = parallelly::availableCores(omit = 1L),
                                save_details = list(), control = list(),
-                               verbose, progress = TRUE){
+                               verbose, progress = FALSE){
     dots <- list(...)
     if(missing(verbose))
         verbose <- interactive() || on_HPC.cluster()
