@@ -44,15 +44,15 @@ conflicts if the branches are independent.)
       Re-verified on mirai 2.7.3: crash watchdog, PSOCK crash teardown,
       export-clobber safety, re-entrant `runSimulation()`.
 - [x] #101 experiments (see Findings).
+- [x] Committed the bit-identity test (`test-07-load-balancing.R`):
+      runArraySimulation ≡ runSimulation with `genSeeds(iseed, arrayID)`,
+      serial and parallel. Full suite on branch 5: 199 pass, 0 fail, 0 warn.
 
 ### In progress
-- [ ] **Commit the bit-identity test** in `tests/tests/test-07-load-balancing.R`
-      (runArraySimulation ≡ runSimulation with `genSeeds(iseed, arrayID)`,
-      serial and parallel). Test file passes on its own (8/8); run the full
-      suite, then commit on branch 5.
+- (nothing)
 
 ### To do
-- [ ] Push all five branches (branch 2 is new on the remote).
+- [x] Pushed all five branches (2026-10-24).
 - [ ] Re-simulate the merge order 1 → 5 onto `origin/main` in a scratch clone;
       confirm zero conflicts; install the merged tree and run the full suite.
 - [ ] Update the merge-order artifact page (now 5 PRs, stacked, 2.29).

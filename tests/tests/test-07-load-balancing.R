@@ -82,4 +82,23 @@ test_that('load balanced dispatches are reproducible', {
     expect_equal(arr2$mu, arr3$mu)
     SimClean(dir())
 
+    # runArraySimulation() must be bit-identical to runSimulation() supplied
+    # with the equivalent genSeeds(iseed, arrayID) seed, both serially and in
+    # parallel (see discussion in #101)
+    DesignA <- createDesign(N = c(10, 20))
+    arr_seed <- genSeeds(DesignA, iseed = 554184288, arrayID = 2)
+    for(par in c(FALSE, TRUE)){
+        sim <- runSimulation(DesignA[2L, ], replications = 6, generate = Generate,
+                             analyse = Analyse, summarise = Summarise,
+                             seed = arr_seed, parallel = par, ncores = 2,
+                             save = FALSE, verbose = FALSE)
+        arr <- runArraySimulation(DesignA, replications = 6, generate = Generate,
+                                  analyse = Analyse, summarise = Summarise,
+                                  iseed = 554184288, arrayID = 2,
+                                  filename = paste0('arrpar', par),
+                                  parallel = par, ncores = 2, verbose = FALSE)
+        expect_identical(sim$mu, arr$mu)
+    }
+    SimClean(dir())
+
 })
