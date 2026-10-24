@@ -1,5 +1,12 @@
 # NEWS file for SimDesign
 
+## Changes in SimDesign 2.29
+
+- Removed a leftover `browser()` debugging call in the internal `Analysis()`
+  function, which halted interactive sessions at a debugging prompt whenever
+  results were saved with `save_results = TRUE` alongside
+  `store_results = TRUE`
+
 ## Changes in SimDesign 2.28
 
 - In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 
