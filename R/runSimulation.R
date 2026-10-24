@@ -276,7 +276,7 @@
 #'   \code{parallel} is used, however the overhead that tags along with parallel processing
 #'   results in higher processing times than simply running the simulation with one core.
 #'
-#' @param cl cluster object defined by \code{\link{makeCluster}} used to run code in parallel
+#' @param cl cluster object defined by \code{\link[parallel]{makeCluster}} used to run code in parallel
 #'   (ignored if using the \code{\link[future]{future}} package approach).
 #'   If \code{NULL} and \code{parallel = TRUE}, a local cluster object will be defined which
 #'   selects the maximum number cores available
@@ -675,7 +675,7 @@
 #' @param seed a vector or list of integers to be used for reproducibility.
 #'   The length of the vector must be equal the number of rows in \code{design}.
 #'   If the input is a vector then \code{\link{set.seed}} or
-#'   \code{\link{clusterSetRNGStream}} for each condition will be called, respectively.
+#'   \code{\link[parallel]{clusterSetRNGStream}} for each condition will be called, respectively.
 #'   If a list is provided then these
 #'   numbers must have been generated from \code{\link{genSeeds}}. The list approach
 #'   ensures random number generation independence across conditions and replications,
@@ -719,7 +719,8 @@
 #'
 #' @param verbose logical; print messages to the R console? Set to \code{TRUE} in interactive mode.
 #'    On HPC clusters this is automatically set to \code{TRUE} so that progress can be tracked
-#'    in locally stored files (e.g., in SLURM, the \code{.out} files)
+#'    in locally stored files (e.g., in SLURM, the \code{.out} files), however can be set to \code{FALSE}
+#'    to override default behavior
 #'
 #' @return a \code{tibble} from the \code{dplyr} package (also of class \code{'SimDesign'})
 #'   with the original \code{design} conditions in the left-most columns,
@@ -1175,9 +1176,10 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                           CI = .95, seed = NULL, boot_method='none', boot_draws = 1000L,
                           max_errors = 50L, resume = TRUE, save_details = list(),
                           control = list(), not_parallel = NULL, progress = TRUE,
-                          verbose = interactive())
+                          verbose)
 {
-    if(!verbose) verbose <- on_HPC.cluster()
+    if(missing(verbose))
+        verbose <- interactive() || on_HPC.cluster()
     max_time.start <- if(is.null(control$max_time.start))
         proc.time()[3L] else control$max_time.start
     stopifnot(!missing(analyse))
@@ -1987,7 +1989,8 @@ runSimulation <- function(design, replications, generate, analyse, summarise,
                                       stored_results = if(store_results) stored_Results_list else NULL,
                                       Design.ID=Design.ID,
                                       log_times=log_times,
-                                      functions=list(Generate=Generate, Analyse=Analyse, Summarise=Summarise))
+                                      fixed_objects=fixed_objects,
+                                      functions=list(Generate=generate, Analyse=analyse, Summarise=summarise))
     if(dummy_run) Final$dummy_run <- NULL
     class(Final) <- c('SimDesign', class(Final))
     if(!is.null(filename)){ #save file

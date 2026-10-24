@@ -12,8 +12,9 @@ SimWarnings(obj, subset = TRUE, fuzzy = TRUE)
 \item{subset}{logical; take a subset of the \code{design} object showing only conditions that
 returned warnings?}
 
-\item{fuzzy}{logical; group warning messages that differ only slightly into a single
-column? Set to \code{FALSE} to report every distinct message separately}
+\item{fuzzy}{logical; use fuzzy string matching to reduce effectively identical messages?
+This argument is passed to \code{\link{SimExtract}}. Set to \code{FALSE} to report
+every distinct message}
 }
 \description{
 Extractor function in situations where \code{\link{runSimulation}} returned a simulation

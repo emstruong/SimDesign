@@ -169,7 +169,7 @@ automatic re-draw message with `paste(NA_names, sep=',')` where `collapse` was
 meant. With more than one `NA`/`NaN` element the `sprintf()` call vectorises
 and `stop()` concatenates, yielding
 `...redrawing: as4...redrawing: as7` and a separate `SimErrors()` column per
-`NaN` pattern. Fixed in this branch.
+`NaN` pattern. Fixed upstream in SimDesign 2.27.
 
 **An over-count in `SimErrors()`, since fixed.** The two runs accept an
 identical set of replications but originally tallied different numbers of
@@ -194,9 +194,10 @@ total                                      493          375
 375 is exactly the vignette run's total, and the corrected 7 is exactly the
 number of `NaN` re-draws the vignette run reported. The two policies really do
 re-draw identically, which is what the byte-identical results already implied.
-Fixed in this branch (`fuzzy_reduce()` no longer absorbs columns already
-reported under an earlier group), with `SimErrors(..., fuzzy = FALSE)` added
-so exact per-message attribution is available.
+Fixed upstream in SimDesign 2.27: `fuzzy_reduce()` no longer absorbs columns
+already reported under an earlier group, and `SimErrors()`/`SimWarnings()`
+gained a `fuzzy` argument so exact per-message attribution is available. The
+scripts here call `SimErrors(..., fuzzy = FALSE)`.
 
 A second, separate consequence of the same `agrepl()` default surfaced while
 tracking this down: two genuinely different errors that differ by only a few
@@ -204,7 +205,7 @@ characters --- `A.ERROR: AAA failed` and `B.ERROR: BBB failed` --- are within
 `agrep`'s default 10% edit distance and get merged under the *first* message's
 name. Counts stay correct, but a reader of `SimErrors()` sees the wrong
 analysis function blamed. `fuzzy = FALSE` avoids it; whether the default
-tolerance should be tightened is a judgement call for the maintainer.
+tolerance should also be tightened is a judgement call for the maintainer.
 `dev/issue96/07-simerrors-bug.R` is a self-contained reproducer for both.
 
 ## Result 5: the failure rates themselves
@@ -238,4 +239,7 @@ Rscript 06-figure.R      # redraw-effect.png
 Derived tables are committed as `.csv`; the raw `.rds` output is regenerable
 and is not tracked.
 
-Session: R 4.3.3, SimDesign 2.26.1, mirt 1.46.1, lavaan 0.6-17.
+Session: R 4.3.3, mirt 1.46.1, lavaan 0.6-17. The results above were produced
+under SimDesign 2.26.1; the scripts have since been re-checked against 2.28,
+whose `SimErrors()` fixes change the error *tables* quoted under Result 4 but
+none of the bias, RMSE or failure-rate results.

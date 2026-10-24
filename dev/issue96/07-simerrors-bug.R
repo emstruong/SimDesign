@@ -6,6 +6,12 @@
 ## Both stem from fuzzy_reduce() grouping messages with agrepl(), whose default
 ## max.distance is 10% of the pattern length and which matches a pattern
 ## occurring *inside* a longer string.
+##
+## Problem 1 (over-counting) was fixed upstream in SimDesign 2.27, so against
+## 2.27+ the "fixed" row below matches the true counts; the old implementation
+## is reproduced here for the comparison.  Problem 2 (distinct messages merged
+## under the first name) is inherent to the default tolerance and is still
+## present; SimErrors(..., fuzzy = FALSE), added in 2.27, avoids it.
 
 suppressMessages(library(SimDesign))
 

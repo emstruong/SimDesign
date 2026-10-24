@@ -14,10 +14,9 @@ SimErrors(obj, seeds = FALSE, subset = TRUE, fuzzy = TRUE)
 \item{subset}{logical; take a subset of the \code{design} object showing only conditions that
 returned errors?}
 
-\item{fuzzy}{logical; group error messages that differ only slightly (e.g., by an
-iteration count) into a single column? Set to \code{FALSE} to report every distinct
-message separately, which is useful when several \code{analyse} functions raise
-similarly worded errors and the per-function attribution matters}
+\item{fuzzy}{logical; use fuzzy string matching to reduce effectively identical messages?
+This argument is passed to \code{\link{SimExtract}}. Set to \code{FALSE} to report
+every distinct message}
 }
 \description{
 Extractor function in situations where \code{\link{runSimulation}} returned a simulation

@@ -44,7 +44,8 @@ summarise_run <- function(file, label) {
                 as.list(s), row.names = NULL)
         }
     }
-    list(summary = do.call(rbind, out), errors = SimErrors(res),
+    list(summary = do.call(rbind, out),
+         errors = SimErrors(res, fuzzy = FALSE),
          design = as.data.frame(res))
 }
 

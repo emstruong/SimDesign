@@ -8,8 +8,9 @@
 #' @param subset logical; take a subset of the \code{design} object showing only conditions that
 #'   returned warnings?
 #'
-#' @param fuzzy logical; group warning messages that differ only slightly into a single
-#'   column? Set to \code{FALSE} to report every distinct message separately
+#' @param fuzzy logical; use fuzzy string matching to reduce effectively identical messages?
+#'   This argument is passed to \code{\link{SimExtract}}. Set to \code{FALSE} to report
+#'   every distinct message
 #'
 #' @references
 #'

@@ -1,28 +1,33 @@
 # NEWS file for SimDesign
 
+## Changes in SimDesign 2.28
+
+- In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 
+  progress bar is generally unnecessary for array jobs by default (plus, reduces
+  a small amount of overhead)
+
+- `descript()` returns name of object as variable identifier when input 
+  is a vector
+
+- Add `warn_mismatch` to `SimCollect()` to throw warning if packages or 
+  R versions do not match across files, and set `warning_details = TRUE` by 
+  default
+
+- Fixes various subtle `SimCollect()` issues reported in Issue #103
+
+## Changes in SimDesign 2.27
+
+- `descript()` provides better tracking of variable name information. Added 
+  `margin` for row/column or higher marginalization of proportions
+
+- `SimCollect()` works correctly with count data now and avoids 
+  Jensen inequality behavior when weighted averages are inappropriate 
+  (reported by Michael Truong)
+
+- `SimWarnings()` and `SimErrors()` wrappers gain a `fuzzy` argument, 
+  which is passed to their associated `SimExtract()` elements
+
 ## Changes in SimDesign 2.26
-
-- Fixed `SimErrors()`/`SimWarnings()` over-reporting counts when one message is
-  a near-substring of another. `fuzzy_reduce()` summed every fuzzy match into
-  each group, including columns already reported under an earlier group, so an
-  attempt in which two `analyse` functions failed together was counted both
-  under the combined `"2 INDEPENDENT ERRORS THROWN"` message and again under
-  the individual message. Totals could therefore exceed the `ERRORS` count
-
-- `SimErrors()` and `SimWarnings()` gain a `fuzzy` argument (default `TRUE`,
-  unchanged behaviour). With `fuzzy = FALSE` every distinct message is reported
-  separately, which matters when several `analyse` functions raise similarly
-  worded errors: the default approximate matching can group them under a single
-  name, making it look as though one analysis function is responsible for all
-  of them
-
-- Fixed the automatic re-draw messages for `NA`/`NaN` results, which used
-  `paste(NA_names, sep=',')` where `collapse` was intended. When more than one
-  element was `NA`/`NaN` the `sprintf()` call vectorised and `stop()` pasted the
-  messages end to end, producing output such as
-  `The following return NaN and required redrawing: as4The following return NaN
-  and required redrawing: as7` and a separate `SimErrors()` column per `NaN`
-  pattern
 
 - `verbose` option in `runArraySimulation()` now prints extract QOL information
   about SLURM clusters (e.g., requested RAM, cores, IDs, etc), and about

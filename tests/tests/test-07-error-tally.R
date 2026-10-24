@@ -70,5 +70,5 @@ test_that('NA/NaN re-draw messages list every offending element', {
                              analyse = Analyse, summarise = Summarise,
                              max_errors = 3L, verbose = FALSE), silent = TRUE)
     msg <- as.character(res)[1L]
-    expect_true(grepl('redrawing: a, b', msg, fixed = TRUE))
+    expect_true(grepl('redrawing: a,b', msg, fixed = TRUE))
 })

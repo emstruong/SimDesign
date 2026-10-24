@@ -40,7 +40,7 @@ runSimulation(
   control = list(),
   not_parallel = NULL,
   progress = TRUE,
-  verbose = interactive()
+  verbose
 )
 
 \method{summary}{SimDesign}(object, ...)
@@ -325,7 +325,7 @@ extracted using \code{SimExtract(res, 'prepare_error_seed')}. Default is \code{N
 \code{\link[future]{future}} package approach). Default uses all available minus 1
 or \code{replications}, whichever is smaller}
 
-\item{cl}{cluster object defined by \code{\link{makeCluster}} used to run code in parallel
+\item{cl}{cluster object defined by \code{\link[parallel]{makeCluster}} used to run code in parallel
   (ignored if using the \code{\link[future]{future}} package approach).
   If \code{NULL} and \code{parallel = TRUE}, a local cluster object will be defined which
   selects the maximum number cores available
@@ -381,7 +381,7 @@ object export issues}
 \item{seed}{a vector or list of integers to be used for reproducibility.
 The length of the vector must be equal the number of rows in \code{design}.
 If the input is a vector then \code{\link{set.seed}} or
-\code{\link{clusterSetRNGStream}} for each condition will be called, respectively.
+\code{\link[parallel]{clusterSetRNGStream}} for each condition will be called, respectively.
 If a list is provided then these
 numbers must have been generated from \code{\link{genSeeds}}. The list approach
 ensures random number generation independence across conditions and replications,
@@ -632,7 +632,8 @@ This is useful when simulations conditions take a long time to run (see also the
 
 \item{verbose}{logical; print messages to the R console? Set to \code{TRUE} in interactive mode.
 On HPC clusters this is automatically set to \code{TRUE} so that progress can be tracked
-in locally stored files (e.g., in SLURM, the \code{.out} files)}
+in locally stored files (e.g., in SLURM, the \code{.out} files), however can be set to \code{FALSE}
+to override default behavior}
 
 \item{object}{SimDesign object returned from \code{\link{runSimulation}}}
 

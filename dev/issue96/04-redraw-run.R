@@ -77,7 +77,10 @@ run_one <- function(dwls_fun, label) {
                          seed = rep(20260801L, nrow(Design)) + seq_len(nrow(Design)),
                          verbose = TRUE)
     cat('\n---', label, '--- elapsed', round(proc.time()[3L] - t0, 1), 's\n')
-    print(SimErrors(res))
+    # fuzzy = FALSE keeps each analyse function's message in its own column;
+    # the default approximate matching can group similarly worded messages
+    # from different functions under a single name
+    print(SimErrors(res, fuzzy = FALSE))
     saveRDS(res, paste0('redraw-', label, '.rds'))
     res
 }
