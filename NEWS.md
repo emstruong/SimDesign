@@ -1,6 +1,44 @@
 # NEWS file for SimDesign
 
-## Changes in SimDesign 2.27
+## Changes in SimDesign 2.29
+
+- Removed a leftover `browser()` debugging call in the internal `Analysis()`
+  function, which halted interactive sessions at a debugging prompt whenever
+  results were saved with `save_results = TRUE` alongside
+  `store_results = TRUE`
+
+- `runArraySimulation()` now actually defaults to `progress = FALSE`, as
+  documented in the 2.28 release notes (the function signature still
+  defaulted to `TRUE`)
+
+- Fixed an `object not found` error when combining parallel processing with
+  user-defined functions that live outside of `.GlobalEnv` (e.g., defined
+  inside a function body or a `testthat` block) while `runSimulation()` is
+  reached through a wrapper such as `runArraySimulation()` or `SimSolve()`.
+  The exportable functions were discovered by walking the calling stack, yet
+  the subsequent `clusterExport()` resolved those names through a single
+  frame's lexical chain, where they need not be visible; the function objects
+  are now captured at discovery time and exported directly
+
+- Fixed crashes when `control$max_time` interrupts execution: a replication
+  interrupted mid-run yielded a `NULL` result that corrupted the results list
+  (`subscript out of bounds` during attribute cleanup), and a design condition
+  whose replications all timed out crashed the aggregation instead of
+  returning. Interrupted replications are now classed as timed-out like the
+  pre-check path, and a fully timed-out condition returns a
+  `FATAL_TERMINATION` placeholder row so partial simulation results survive
+
+- `control$max_time` deadlines are now enforced reliably on parallel workers.
+  Previously the reference point was a `proc.time()` offset from the master
+  process, which is meaningless against a freshly spawned worker's own
+  process clock, so workers could evaluate replications well past the
+  deadline (risking hard external terminations, e.g. by SLURM, before
+  results were saved). The reference is now a wall-clock timestamp
+  (`Sys.time()`). Additionally, a time-limit interruption that lands inside
+  the internal `try()` wrappers no longer counts as a recoverable
+  generate/analyse error: previously the caught interrupt cleared the
+  transient time limit and the retry ran unbounded, allowing a single
+  replication to overrun `max_time` by up to its full run-time
 
 - Parallel replications are now dispatched with dynamic load balancing by
   default (`control` list element `use_load_balancing = TRUE`). Previously,
@@ -31,16 +69,34 @@
   load balanced across workers; results are unaffected in this case since
   `future.seed = TRUE` already pre-assigns seeds per replication
 
-## Changes in SimDesign 2.26
+## Changes in SimDesign 2.28
 
-- Fixed an `object not found` error when combining parallel processing with
-  user-defined functions that live outside of `.GlobalEnv` (e.g., defined
-  inside a function body or a `testthat` block) while `runSimulation()` is
-  reached through a wrapper such as `runArraySimulation()` or `SimSolve()`.
-  The exportable functions were discovered by walking the calling stack, yet
-  the subsequent `clusterExport()` resolved those names through a single
-  frame's lexical chain, where they need not be visible; the function objects
-  are now captured at discovery time and exported directly
+- In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 
+  progress bar is generally unnecessary for array jobs by default (plus, reduces
+  a small amount of overhead)
+
+- `descript()` returns name of object as variable identifier when input 
+  is a vector
+
+- Add `warn_mismatch` to `SimCollect()` to throw warning if packages or 
+  R versions do not match across files, and set `warning_details = TRUE` by 
+  default
+
+- Fixes various subtle `SimCollect()` issues reported in Issue #103
+
+## Changes in SimDesign 2.27
+
+- `descript()` provides better tracking of variable name information. Added 
+  `margin` for row/column or higher marginalization of proportions
+
+- `SimCollect()` works correctly with count data now and avoids 
+  Jensen inequality behavior when weighted averages are inappropriate 
+  (reported by Michael Truong)
+
+- `SimWarnings()` and `SimErrors()` wrappers gain a `fuzzy` argument, 
+  which is passed to their associated `SimExtract()` elements
+
+## Changes in SimDesign 2.26
 
 - `verbose` option in `runArraySimulation()` now prints extract QOL information
   about SLURM clusters (e.g., requested RAM, cores, IDs, etc), and about

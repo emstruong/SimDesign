@@ -231,6 +231,13 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
                     call.=FALSE )
             results <- results[not_timed_out]
         }
+        # when every replication timed out nothing remains to summarise;
+        # return a placeholder row (as with fatal errors) so the partial
+        # simulation results survive rather than terminating with
+        # "subscript out of bounds" in the downstream aggregation
+        if(!length(results))
+            return(c(FATAL_TERMINATION=
+                'max_time exceeded; no replications were evaluated for this design row'))
     }
     if(is(results, 'try-error')){
         # deal with fatal errors
@@ -253,7 +260,6 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
     if(summarise_asis || store_results){
         tabled_results <- toTabledResults(results)
         if(save_results){
-            browser()
             tmp <- ifelse(is.null(save_results_filename), 'results-row', save_results_filename)
             tmpfilename <- paste0(save_results_dirname,
                                   sprintf('/%s', tmp), ID)

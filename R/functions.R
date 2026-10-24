@@ -280,7 +280,16 @@ Summarise <- function(condition, results, fixed_objects) NULL
 mainsim <- function(index, condition, condition.row, generate, analyse, fixed_objects, max_errors, save_results_out_rootdir,
                     save, allow_na, allow_nan, save_seeds, save_seeds_dirname, load_seed, max_time, max_time.start,
                     warnings_as_errors, store_Random.seeds, store_warning_seeds, use_try, include_replication_index,
-                    useGenerate, useAnalyseHandler, logging, p = NULL, future = FALSE, allow_gen_errors = TRUE){
+                    useGenerate, useAnalyseHandler, logging, p = NULL, future = FALSE, allow_gen_errors = TRUE,
+                    stop_on_time_limit = FALSE){
+
+    # under mainsim_maxtime() a time-limit interruption raised inside the
+    # try() wrappers must terminate the replication as timed-out rather than
+    # count as a recoverable error: the caught interrupt clears the transient
+    # time limit, so a retry would otherwise run unbounded past max_time
+    # (critical when an external scheduler will hard-kill the job)
+    time_limit_hit <- function(msg)
+        stop_on_time_limit && grepl('reached elapsed time limit|reached CPU time limit', msg)
 
     if(!is.null(p)) p(sprintf("replication = %g", index))
     if(include_replication_index) condition$REPLICATION <- index
@@ -325,6 +334,11 @@ mainsim <- function(index, condition, condition.row, generate, analyse, fixed_ob
             }
         }
         if(is(simlist, 'try-error')){
+            if(time_limit_hit(simlist[1L])){
+                out <- NA
+                class(out) <- 'timed_out'
+                return(out)
+            }
             simlist[1L] <-
                 gsub('Error in generate\\(condition = condition, fixed_objects = fixed_objects) : \\n  ',
                      replacement = '', simlist[1L])
@@ -386,18 +400,23 @@ mainsim <- function(index, condition, condition.row, generate, analyse, fixed_ob
         if(!allow_nan && !is.list(res) && any(is.nan(res))){
             NA_names <- names(res)[is.nan(res)]
             res <- try(stop(sprintf('The following return NaN and required redrawing: %s',
-                                    paste(NA_names, sep=',')),
+                                    paste(NA_names, collapse=',')),
                             call.=FALSE), silent=TRUE)
         }
         if(!allow_na && !is.list(res) && any(is.na(res))){
             NA_names <- names(res)[is.na(res)]
             res <- try(stop(sprintf('The following return NA and required redrawing: %s',
-                                    paste(NA_names, sep=',')),
+                                    paste(NA_names, collapse=',')),
                             call.=FALSE), silent=TRUE)
         }
 
         # if an error was detected in analyse(), try again
         if(is(res, 'try-error')){
+            if(time_limit_hit(res[1L])){
+                out <- NA
+                class(out) <- 'timed_out'
+                return(out)
+            }
             res[1L] <-
                 gsub('Error in analyse\\(dat = simlist, condition = condition, fixed_objects = fixed_objects) : \\n  ',
                      replacement = '', res[1L])
@@ -439,16 +458,36 @@ mainsim <- function(index, condition, condition.row, generate, analyse, fixed_ob
     }
 }
 
+# Seconds elapsed since a max_time.start reference point. Wall-clock (POSIXct)
+# references are required for parallel evaluation: proc.time() measures time
+# since the *current process* launched, so a master-recorded offset compared
+# against a freshly spawned worker's own clock produces meaningless deadlines
+# (workers were observed running well past max_time, risking hard external
+# terminations from schedulers such as SLURM before results could be saved).
+# Numeric references retain the legacy process-relative behaviour
+elapsed_since <- function(start){
+    if(inherits(start, 'POSIXct'))
+        as.numeric(difftime(Sys.time(), start, units = 'secs'))
+    else unname(proc.time()['elapsed'] - start)
+}
+
 mainsim_maxtime <- function(max_time, max_time.start, ...){
-    st <- proc.time()['elapsed']
-    time_left <- max_time - (st - max_time.start)
+    time_left <- max_time - elapsed_since(max_time.start)
     if(time_left <= 0){
         out <- NA
         class(out) <- 'timed_out'
         return(out)
     }
-    out <- R.utils::withTimeout(mainsim(...),
+    out <- R.utils::withTimeout(mainsim(..., stop_on_time_limit=TRUE),
                                 timeout = time_left,
                                 onTimeout = 'warning')
+    # withTimeout() returns NULL when the limit interrupts the replication
+    # mid-run; treat this the same as the pre-check above so that the
+    # timed-out filter in Analysis() removes it (a surviving NULL corrupts
+    # the results list and terminates with "subscript out of bounds")
+    if(is.null(out)){
+        out <- NA
+        class(out) <- 'timed_out'
+    }
     out
 }

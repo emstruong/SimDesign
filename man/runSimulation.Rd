@@ -40,7 +40,7 @@ runSimulation(
   control = list(),
   not_parallel = NULL,
   progress = TRUE,
-  verbose = interactive()
+  verbose
 )
 
 \method{summary}{SimDesign}(object, ...)
@@ -500,7 +500,7 @@ in the simulation}
       and will silently fall back to the static scheduling approach (supply
       \code{ncores} instead to obtain load balancing with \code{mirai}).
       Set to \code{FALSE} for the static scheduling behavior of
-      \code{SimDesign} versions prior to 2.27}
+      \code{SimDesign} versions prior to 2.29}
 
     \item{\code{stop_on_fatal}}{logical (default is \code{FALSE}); should the simulation be
       terminated immediately when
@@ -625,8 +625,15 @@ in the simulation}
        See \code{\link{timeFormater}} for the input specifications; otherwise, can be
        specified as a \code{numeric} input reflecting the maximum time in seconds.
 
-       Note that when \code{parallel = TRUE} the \code{max_time} can only be checked on
-       a per condition basis.
+       The deadline is enforced per replication against wall-clock time
+       (including on parallel workers): replications that have not started by the
+       deadline are skipped, a replication in progress is interrupted at the
+       deadline and discarded as timed-out, and the completed replications are
+       returned. This keeps terminations as prompt as possible when an external
+       scheduler (e.g., SLURM) will forcibly kill the job at its allocation limit,
+       though note that R can only interrupt code at interpreter checkpoints, so
+       a replication executing long-running compiled code may still overrun the
+       deadline until control returns to R.
      }
 
      \item{\code{max_RAM}}{
@@ -655,7 +662,8 @@ This is useful when simulations conditions take a long time to run (see also the
 
 \item{verbose}{logical; print messages to the R console? Set to \code{TRUE} in interactive mode.
 On HPC clusters this is automatically set to \code{TRUE} so that progress can be tracked
-in locally stored files (e.g., in SLURM, the \code{.out} files)}
+in locally stored files (e.g., in SLURM, the \code{.out} files), however can be set to \code{FALSE}
+to override default behavior}
 
 \item{object}{SimDesign object returned from \code{\link{runSimulation}}}
 
