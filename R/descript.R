@@ -6,7 +6,7 @@
 #' of univariate summary functions. As such, quantitative/continuous variable
 #' information is kept distinct in the output, while discrete variables (e.g.,
 #' \code{factors} and \code{character} vectors) are returned by using the
-#' \code{discrete} argument. When applicable a \code{"VARS"} column will be included in the
+#' \code{discrete} argument. When applicable a \code{"VARIABLE"} column will be included in the
 #' output to indicate which variable is being summarised on the respective row.
 #'
 #' The purpose of this function is to provide
@@ -22,8 +22,13 @@
 #' specifications are declared using \code{\link[dplyr]{group_by}}
 #' and subsequently passed to \code{descript}.
 #'
+#' Finally, should more verbs be required for data manipulation the \code{dplyr}
+#' package should be attached or indexed so that any missing verbs can be used
+#' directly.
+#'
 #' @param df typically a \code{data.frame} or \code{tibble}-like structure
-#'  containing the variables of interest
+#'  containing the variables of interest, though \code{vector} objects
+#'  can be supplied as well.
 #'
 #'  Note that \code{factor} and \code{character} vectors will be treated as
 #'  discrete observations, and by default are omitted from the computation
@@ -43,15 +48,15 @@
 #'
 #'  \describe{
 #'   \item{\code{n}}{number of non-missing observations}
+#'   \item{\code{miss}}{number of missing observations (dropped by default if no missing present)}
 #'   \item{\code{mean}}{mean}
 #'   \item{\code{trim}}{trimmed mean (10\%)}
+#'   \item{\code{median}}{median}
 #'   \item{\code{sd}}{standard deviation}
+#'   \item{\code{IQR}}{interquartile range}
 #'   \item{\code{skew}}{skewness (from \code{e1701})}
 #'   \item{\code{kurt}}{kurtosis (from \code{e1071})}
 #'   \item{\code{min}}{minimum}
-#'   \item{\code{P25}}{25th percentile (a.k.a., 1st/lower quartile, Q1), returned from \code{\link{quantile}})}
-#'   \item{\code{P50}}{median (50th percentile)}
-#'   \item{\code{P75}}{75th percentile (a.k.a, 3rd/upper quartile, Q3), returned from \code{\link{quantile}})}
 #'   \item{\code{max}}{maximum}
 #'  }
 #'
@@ -64,9 +69,15 @@
 #'  be set to \code{TRUE}. For greater flexibility
 #'  in creating cross-tabulated count/proportion information see \code{\link{xtabs}}
 #'
+#' @param margin matched argument passed to \code{\link{prop.table}} for marginal
+#'  proportion output (1 = row, 2 = column, etc)
+#'
 #' @param by_group logical; when \code{group_by()} were used to define the conditioning levels,
 #'   should the output from \code{by()} be organized by these group levels or by variable
 #'   names? Only applicable when more than one variable is being described
+#'
+#' @param drop.miss logical; if no missing values in the dataset should the element
+#'   \code{'miss'} be removed from the \code{fun} list?
 #'
 #' @importFrom e1071 skewness kurtosis
 #'
@@ -114,6 +125,10 @@
 #' fmtcars |> group_by(am) |> descript(discrete=TRUE)
 #' fmtcars |> group_by(cyl, am) |> descript(discrete=TRUE)
 #'
+#' # express proportions as row (1) or column (2) marginals (or higher)
+#' fmtcars |> group_by(cyl) |> descript(discrete=TRUE, margin = 1)
+#' fmtcars |> group_by(cyl) |> descript(discrete=TRUE, margin = 2)
+#'
 #' # with single variables, typical dplyr::summarise() output returned
 #' fmtcars |> select(mpg) |> descript()
 #' fmtcars |> group_by(cyl) |> select(mpg) |> descript()
@@ -121,33 +136,40 @@
 #'
 #' # if you want a tibble from the list of information instead
 #' fmtcars |> group_by(cyl) |> descript(collapse=TRUE)
-#' fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |> arrange(VARS)
+#' fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |> arrange(VARIABLE)
 #' fmtcars |> group_by(am, cyl) |> select(mpg, wt) |> descript(collapse=TRUE)
 #' fmtcars |> group_by(am, cyl) |> select(mpg, wt) |>
-#'   descript(collapse=TRUE) |> arrange(VARS)
+#'   descript(collapse=TRUE) |> arrange(VARIABLE)
 #'
 #' # post-extraction (if you don't mind doing the extra computations
 #' #   and extracting afterword)
-#' fmtcars |> descript() |> select(n, mean)
-#' fmtcars |> select(mpg) |> descript() |> select(n, mean)
-#' fmtcars |> group_by(cyl) |> select(mpg) |> descript() |> select(n, mean)
-#' fmtcars |> group_by(cyl, am) |> descript() |> select(n, mean)
+#' fmtcars |> descript() |> select(VARIABLE, n, mean)
+#' fmtcars |> select(mpg) |> descript() |> select(VARIABLE, n, mean)
+#' fmtcars |> group_by(cyl) |> select(mpg) |> descript() |>
+#'   select(VARIABLE, n, mean)
+#' fmtcars |> group_by(cyl, am) |> descript() |> select(VARIABLE, n, mean)
 #' fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |>
-#'   select(cyl, VARS, n, mean)
+#'   select(cyl, VARIABLE, n, mean)
 #'
 #' # only compute a subset of summary statistics
 #' funs <- get_descriptFuns()
 #' sfuns <- funs[c('n', 'mean', 'sd')] # subset
 #' fmtcars |> descript(funs=sfuns) # only n, miss, mean, and sd
 #'
-#' # add a new functions
+#' # add a new functions (20% trimmed mean, and 25/75th quantile for IQR)
 #' funs2 <- c(sfuns,
 #'            trim_20 = \(x) mean(x, trim=.2, na.rm=TRUE),
-#'            median= \(x) median(x, na.rm=TRUE))
+#'            P_25= \(x) quantile(x, .25, na.rm=TRUE),
+#'            P_75= \(x) quantile(x, .75, na.rm=TRUE))
 #' fmtcars |> descript(funs=funs2)
 #'
-descript <- function(df, funs=get_descriptFuns(),
-                     by_group=FALSE, discrete=FALSE, collapse=FALSE)
+#' # function works on vectors as well
+#' IQ <- rnorm(100, mean=100, sd=15) |> round()
+#' descript(IQ)
+#'
+descript <- function(df, funs=get_descriptFuns(), margin = NULL,
+                     by_group=FALSE, discrete=FALSE, collapse=FALSE,
+                     drop.miss = TRUE)
 {
 	discrete.fun <- function(x){
 		tab <- table(x, useNA = "ifany")
@@ -159,8 +181,24 @@ descript <- function(df, funs=get_descriptFuns(),
 		ret
 	}
 
-	if(!is.data.frame(suppressMessages(df)))
-		df <- as.data.frame(df)
+	objname <- NULL
+	if(!is.data.frame(suppressMessages(df))){
+	    objname <- deparse(substitute(df))
+	    df <- as.data.frame(df)
+	    if(ncol(df) == 1)
+	        colnames(df) <- objname
+	}
+
+	if(drop.miss){
+	    pick <- colnames(df)
+	    if(length(dplyr::group_keys(df)))
+	        pick <- pick[!(pick %in% colnames(dplyr::group_keys(df)))]
+	    if(!any(is.na(df[,pick, drop=FALSE])) && !is.null(funs$miss))
+	        funs$miss <- NULL
+	}
+
+	if(any(colnames(df) == 'VARIABLE'))
+	    stop('df cannot contain the name VARIABLE', call.=FALSE)
 
 	if(collapse || discrete) by_group <- TRUE
 
@@ -172,10 +210,10 @@ descript <- function(df, funs=get_descriptFuns(),
 	    ret <- lapply(vars, \(x){
 	        form <- sprintf("~ %s + %s", x, paste0(gnames, collapse='+'))
 	        xtab <- xtabs(as.formula(form), data = df)
-	        list(count=xtab, proportions=round(prop.table(xtab),3))
+	        list(COUNTS=xtab, PROPORTIONS=round(prop.table(xtab, margin=margin),3))
 	    })
 	    attr(ret, 'dim') <- length(vars)
-	    attr(ret, 'dimnames') <- list(VARIABLE=paste0(vars, '\n'))
+	    attr(ret, 'dimnames') <- list(VARIABLE=vars)
 	    class(ret) <- c('bybye', 'by')
 	    return(ret)
 
@@ -184,16 +222,18 @@ descript <- function(df, funs=get_descriptFuns(),
 	if(length(dplyr::group_keys(df)) && !by_group){
 	    groupkeys <- na.omit(dplyr::group_keys(df))
 	    vars <- colnames(df)
-	    vars <- vars[!(vars %in% colnames(groupkeys)) & !sapply(df, is.factor)]
+	    vars <- vars[!(vars %in% colnames(groupkeys)) & !sapply(df, is.factor) &
+	                     !sapply(df, is.character)]
 	    if(length(vars) > 1){
 	        ret <- vector('list', length(vars))
 	        names(ret) <- vars
 	        for(i in 1:length(vars)){
 	            df0 <- df[c(colnames(groupkeys), vars[i])]
-	            ret[[i]] <- descript(df0, funs=funs, discrete=discrete, by_group=TRUE)
+	            ret[[i]] <- descript(df0, funs=funs, discrete=discrete,
+	                                 by_group=TRUE, drop.miss=FALSE)
 	        }
 	        attr(ret, 'dim') <- length(vars)
-	        attr(ret, 'dimnames') <- list(VARIABLE=paste0(vars, '\n'))
+	        attr(ret, 'dimnames') <- list(VARIABLE=vars)
 	        class(ret) <- c('bybye', 'by')
 	        return(ret)
 	    }
@@ -207,11 +247,10 @@ descript <- function(df, funs=get_descriptFuns(),
 		pick <- setdiff(colnames(df), names(group))
 		df <- df[ ,pick,drop=FALSE]
 		out <- suppressWarnings(by(df, group, descript, funs=funs,
-								   discrete=discrete, simplify=FALSE))
+								   discrete=discrete, simplify=FALSE, drop.miss=FALSE))
 		class(out) <- c('bybye', class(out))
 		if(!discrete && nrow(out[[1]]) == 1){
 		    out <- do.call(rbind, out)
-		    out$VARS <- NULL
 		    out <- dplyr::bind_cols(groupkeys, out)
 		}
 		if(collapse){
@@ -223,6 +262,8 @@ descript <- function(df, funs=get_descriptFuns(),
 		    tmp2$id <- NULL
 		    out <- dplyr::as_tibble(data.frame(nms, tmp2))
 		}
+		if(by_group)
+		    attr(out, 'discrete') <- TRUE
 		return(out)
 	}
 
@@ -258,14 +299,14 @@ descript <- function(df, funs=get_descriptFuns(),
 	}
 	if(!discrete){
 		retfull <- do.call(rbind, retfull)
-		ret <- data.frame(VARS=factor(colnames(df)), retfull) |> dplyr::as_tibble()
-		if(nrow(ret) == 1) ret$VARS <- NULL
+		ret <- data.frame(VARIABLE=factor(colnames(df)), retfull) |> dplyr::as_tibble()
 	} else {
 		ret <- retfull
 		names(ret) <- colnames(df)
 		class(ret) <- 'bybye'
 		attr(ret, 'dim') <- length(ret)
-		attr(ret, 'dimnames') <- list(VARIABLE = paste0(colnames(df), '\n'))
+		attr(ret, 'discrete') <- TRUE
+		attr(ret, 'dimnames') <- list(VARIABLE = colnames(df))
 	}
 	ret
 }
@@ -274,15 +315,15 @@ descript <- function(df, funs=get_descriptFuns(),
 #' @rdname descript
 get_descriptFuns <- function(){
     list(n        = function(x) sum(!is.na(x)),
+         miss     = function(x) ifelse(any(is.na(x)), sum(is.na(x)), NA),
          mean     = function(x) mean(x, na.rm=TRUE),
          trim     = function(x) mean(x, trim=.1, na.rm=TRUE),
+         median   = function(x) median(x, na.rm=TRUE),
          sd       = function(x) sd(x, na.rm=TRUE),
+         IQR      = function(x) IQR(x, na.rm=TRUE),
          skew     = function(x) e1071::skewness(x, na.rm=TRUE),
          kurt     = function(x) e1071::kurtosis(x, na.rm=TRUE),
          min      = function(x) min(x, na.rm=TRUE),
-         P25      = function(x) quantile(x, .25, na.rm=TRUE),
-         P50      = function(x) median(x, na.rm=TRUE),
-         P75      = function(x) quantile(x, .75, na.rm=TRUE),
          max      = function(x) max(x, na.rm=TRUE))
 }
 
@@ -293,16 +334,19 @@ print.bybye <- function (x, ..., vsep)
     d <- dim(x)
     dn <- dimnames(x)
     dnn <- names(dn)
+    is_discrete <- !is.null(attr(x, 'discrete'))
     if (missing(vsep))
         vsep <- paste0('\n', strrep("-", 0.75 * getOption("width")), '\n')
     lapply(X = seq_along(x), FUN = function(i, x, vsep, ...) {
         if (i != 1L && !is.null(vsep))
             cat(vsep, "\n")
-        ii <- i - 1L
-        for (j in seq_along(dn)) {
-            iii <- ii%%d[j] + 1L
-            ii <- ii%/%d[j]
-            cat(dnn[j], ": ", dn[[j]][iii], "\n", sep = "")
+        if(is_discrete){
+            ii <- i - 1L
+            for (j in seq_along(dn)) {
+                iii <- ii%%d[j] + 1L
+                ii <- ii%/%d[j]
+                cat(dnn[j], ": ", dn[[j]][iii], "\n\n", sep = "")
+            }
         }
         print(x[[i]], ...)
     }, x, vsep, ...)

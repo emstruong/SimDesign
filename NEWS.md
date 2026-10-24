@@ -1,6 +1,15 @@
 # NEWS file for SimDesign
 
-## Changes in SimDesign 2.26
+## Changes in SimDesign 2.29
+
+- Removed a leftover `browser()` debugging call in the internal `Analysis()`
+  function, which halted interactive sessions at a debugging prompt whenever
+  results were saved with `save_results = TRUE` alongside
+  `store_results = TRUE`
+
+- `runArraySimulation()` now actually defaults to `progress = FALSE`, as
+  documented in the 2.28 release notes (the function signature still
+  defaulted to `TRUE`)
 
 - Fixed an `object not found` error when combining parallel processing with
   user-defined functions that live outside of `.GlobalEnv` (e.g., defined
@@ -10,6 +19,35 @@
   the subsequent `clusterExport()` resolved those names through a single
   frame's lexical chain, where they need not be visible; the function objects
   are now captured at discovery time and exported directly
+
+## Changes in SimDesign 2.28
+
+- In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 
+  progress bar is generally unnecessary for array jobs by default (plus, reduces
+  a small amount of overhead)
+
+- `descript()` returns name of object as variable identifier when input 
+  is a vector
+
+- Add `warn_mismatch` to `SimCollect()` to throw warning if packages or 
+  R versions do not match across files, and set `warning_details = TRUE` by 
+  default
+
+- Fixes various subtle `SimCollect()` issues reported in Issue #103
+
+## Changes in SimDesign 2.27
+
+- `descript()` provides better tracking of variable name information. Added 
+  `margin` for row/column or higher marginalization of proportions
+
+- `SimCollect()` works correctly with count data now and avoids 
+  Jensen inequality behavior when weighted averages are inappropriate 
+  (reported by Michael Truong)
+
+- `SimWarnings()` and `SimErrors()` wrappers gain a `fuzzy` argument, 
+  which is passed to their associated `SimExtract()` elements
+
+## Changes in SimDesign 2.26
 
 - `verbose` option in `runArraySimulation()` now prints extract QOL information
   about SLURM clusters (e.g., requested RAM, cores, IDs, etc), and about

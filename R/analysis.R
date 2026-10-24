@@ -211,7 +211,6 @@ Analysis <- function(Functions, condition, condition.row, replications, fixed_ob
     if(summarise_asis || store_results){
         tabled_results <- toTabledResults(results)
         if(save_results){
-            browser()
             tmp <- ifelse(is.null(save_results_filename), 'results-row', save_results_filename)
             tmpfilename <- paste0(save_results_dirname,
                                   sprintf('/%s', tmp), ID)
