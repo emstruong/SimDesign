@@ -52,12 +52,15 @@ conflicts if the branches are independent.)
 - (nothing)
 
 ### To do
-- [x] Pushed all five branches (2026-10-24).
-- [ ] Re-simulate the merge order 1 → 5 onto `origin/main` in a scratch clone;
-      confirm zero conflicts; install the merged tree and run the full suite.
-- [ ] Update the merge-order artifact page (now 5 PRs, stacked, 2.29).
 - [ ] Before opening the upstream PR for branch 5: decide whether to drop the
       `.claude/` directory (issue notes + this plan) from the PR.
+- [ ] Decide on the open question below (serial per-replication streams).
+
+### Verified merge order (2026-10-24)
+- Replayed 1 → 5 onto upstream `main` (`9649040`) from a fresh clone: all five
+  merge as **fast-forwards**. Merged tree `d2539a2` equals branch 5's tree, which
+  passes the full suite (199 pass, 0 fail, 0 warn).
+- Merge-order page updated: https://claude.ai/artifact/6daSqVScx24zM8Znu1Px4K
 
 ## Findings for the #101 discussion
 
