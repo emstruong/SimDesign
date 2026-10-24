@@ -1,5 +1,32 @@
 # NEWS file for SimDesign
 
+## Changes in SimDesign 2.28
+
+- In `runArraySimulation()` `progress` now defaults to `FALSE` as viewing the 
+  progress bar is generally unnecessary for array jobs by default (plus, reduces
+  a small amount of overhead)
+
+- `descript()` returns name of object as variable identifier when input 
+  is a vector
+
+- Add `warn_mismatch` to `SimCollect()` to throw warning if packages or 
+  R versions do not match across files, and set `warning_details = TRUE` by 
+  default
+
+- Fixes various subtle `SimCollect()` issues reported in Issue #103
+
+## Changes in SimDesign 2.27
+
+- `descript()` provides better tracking of variable name information. Added 
+  `margin` for row/column or higher marginalization of proportions
+
+- `SimCollect()` works correctly with count data now and avoids 
+  Jensen inequality behavior when weighted averages are inappropriate 
+  (reported by Michael Truong)
+
+- `SimWarnings()` and `SimErrors()` wrappers gain a `fuzzy` argument, 
+  which is passed to their associated `SimExtract()` elements
+
 ## Changes in SimDesign 2.26
 
 - `verbose` option in `runArraySimulation()` now prints extract QOL information

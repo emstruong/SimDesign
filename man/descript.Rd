@@ -8,16 +8,19 @@
 descript(
   df,
   funs = get_descriptFuns(),
+  margin = NULL,
   by_group = FALSE,
   discrete = FALSE,
-  collapse = FALSE
+  collapse = FALSE,
+  drop.miss = TRUE
 )
 
 get_descriptFuns()
 }
 \arguments{
 \item{df}{typically a \code{data.frame} or \code{tibble}-like structure
- containing the variables of interest
+ containing the variables of interest, though \code{vector} objects
+ can be supplied as well.
 
  Note that \code{factor} and \code{character} vectors will be treated as
  discrete observations, and by default are omitted from the computation
@@ -33,20 +36,23 @@ get_descriptFuns()
 
  \describe{
   \item{\code{n}}{number of non-missing observations}
+  \item{\code{miss}}{number of missing observations (dropped by default if no missing present)}
   \item{\code{mean}}{mean}
   \item{\code{trim}}{trimmed mean (10\%)}
+  \item{\code{median}}{median}
   \item{\code{sd}}{standard deviation}
+  \item{\code{IQR}}{interquartile range}
   \item{\code{skew}}{skewness (from \code{e1701})}
   \item{\code{kurt}}{kurtosis (from \code{e1071})}
   \item{\code{min}}{minimum}
-  \item{\code{P25}}{25th percentile (a.k.a., 1st/lower quartile, Q1), returned from \code{\link{quantile}})}
-  \item{\code{P50}}{median (50th percentile)}
-  \item{\code{P75}}{75th percentile (a.k.a, 3rd/upper quartile, Q3), returned from \code{\link{quantile}})}
   \item{\code{max}}{maximum}
  }
 
  Note that by default the \code{na.rm} behavior is set to \code{TRUE}
  in each function call}
+
+\item{margin}{matched argument passed to \code{\link{prop.table}} for marginal
+proportion output (1 = row, 2 = column, etc)}
 
 \item{by_group}{logical; when \code{group_by()} were used to define the conditioning levels,
 should the output from \code{by()} be organized by these group levels or by variable
@@ -61,6 +67,9 @@ in creating cross-tabulated count/proportion information see \code{\link{xtabs}}
 \item{collapse}{logical; should the result be returned as a list output
 structured using \code{\link{by}} or as a \code{tibble}?
 Default is \code{FALSE}}
+
+\item{drop.miss}{logical; if no missing values in the dataset should the element
+\code{'miss'} be removed from the \code{fun} list?}
 }
 \description{
 Function returns univariate data summaries for each variable supplied. For presentation
@@ -69,7 +78,7 @@ reflects count/proportion information while the ladder are supplied to a (custom
 of univariate summary functions. As such, quantitative/continuous variable
 information is kept distinct in the output, while discrete variables (e.g.,
 \code{factors} and \code{character} vectors) are returned by using the
-\code{discrete} argument. When applicable a \code{"VARS"} column will be included in the
+\code{discrete} argument. When applicable a \code{"VARIABLE"} column will be included in the
 output to indicate which variable is being summarised on the respective row.
 }
 \details{
@@ -85,6 +94,10 @@ from \code{dplyr::summarise} will be returned.
 pipe-friendly code specifications, conditioning/group subset
 specifications are declared using \code{\link[dplyr]{group_by}}
 and subsequently passed to \code{descript}.
+
+Finally, should more verbs be required for data manipulation the \code{dplyr}
+package should be attached or indexed so that any missing verbs can be used
+directly.
 }
 \examples{
 
@@ -125,6 +138,10 @@ fmtcars |> group_by(cyl) |> descript(discrete=TRUE)
 fmtcars |> group_by(am) |> descript(discrete=TRUE)
 fmtcars |> group_by(cyl, am) |> descript(discrete=TRUE)
 
+# express proportions as row (1) or column (2) marginals (or higher)
+fmtcars |> group_by(cyl) |> descript(discrete=TRUE, margin = 1)
+fmtcars |> group_by(cyl) |> descript(discrete=TRUE, margin = 2)
+
 # with single variables, typical dplyr::summarise() output returned
 fmtcars |> select(mpg) |> descript()
 fmtcars |> group_by(cyl) |> select(mpg) |> descript()
@@ -132,30 +149,36 @@ fmtcars |> group_by(cyl, am) |> select(mpg) |> descript()
 
 # if you want a tibble from the list of information instead
 fmtcars |> group_by(cyl) |> descript(collapse=TRUE)
-fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |> arrange(VARS)
+fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |> arrange(VARIABLE)
 fmtcars |> group_by(am, cyl) |> select(mpg, wt) |> descript(collapse=TRUE)
 fmtcars |> group_by(am, cyl) |> select(mpg, wt) |>
-  descript(collapse=TRUE) |> arrange(VARS)
+  descript(collapse=TRUE) |> arrange(VARIABLE)
 
 # post-extraction (if you don't mind doing the extra computations
 #   and extracting afterword)
-fmtcars |> descript() |> select(n, mean)
-fmtcars |> select(mpg) |> descript() |> select(n, mean)
-fmtcars |> group_by(cyl) |> select(mpg) |> descript() |> select(n, mean)
-fmtcars |> group_by(cyl, am) |> descript() |> select(n, mean)
+fmtcars |> descript() |> select(VARIABLE, n, mean)
+fmtcars |> select(mpg) |> descript() |> select(VARIABLE, n, mean)
+fmtcars |> group_by(cyl) |> select(mpg) |> descript() |>
+  select(VARIABLE, n, mean)
+fmtcars |> group_by(cyl, am) |> descript() |> select(VARIABLE, n, mean)
 fmtcars |> group_by(cyl) |> descript(collapse=TRUE) |>
-  select(cyl, VARS, n, mean)
+  select(cyl, VARIABLE, n, mean)
 
 # only compute a subset of summary statistics
 funs <- get_descriptFuns()
 sfuns <- funs[c('n', 'mean', 'sd')] # subset
 fmtcars |> descript(funs=sfuns) # only n, miss, mean, and sd
 
-# add a new functions
+# add a new functions (20\% trimmed mean, and 25/75th quantile for IQR)
 funs2 <- c(sfuns,
            trim_20 = \(x) mean(x, trim=.2, na.rm=TRUE),
-           median= \(x) median(x, na.rm=TRUE))
+           P_25= \(x) quantile(x, .25, na.rm=TRUE),
+           P_75= \(x) quantile(x, .75, na.rm=TRUE))
 fmtcars |> descript(funs=funs2)
+
+# function works on vectors as well
+IQ <- rnorm(100, mean=100, sd=15) |> round()
+descript(IQ)
 
 }
 \seealso{
