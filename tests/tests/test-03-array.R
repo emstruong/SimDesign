@@ -1,20 +1,31 @@
 context('array')
 
+Design <- createDesign(N = c(10, 20, 30))
+
+Design5 <- expandDesign(Design, 5)
+
+# iseed <- genSeeds()
+iseed <- 554184288
+
+Generate <- function(condition, fixed_objects) {
+    dat <- with(condition, rnorm(N, 10, 5)) # distributed N(10, 5)
+    dat
+}
+
+Analyse <- function(condition, dat, fixed_objects) {
+    ret <- c(mean=mean(dat), median=median(dat)) # mean/median of sample data
+    ret
+}
+
+Summarise <- function(condition, results, fixed_objects){
+    colMeans(results)
+}
+
 test_that('array', {
 
     library(SimDesign)
 
     Design <- createDesign(N = c(10, 20, 30))
-
-    Generate <- function(condition, fixed_objects) {
-        dat <- with(condition, rnorm(N, 10, 5)) # distributed N(10, 5)
-        dat
-    }
-
-    Analyse <- function(condition, dat, fixed_objects) {
-        ret <- c(mean=mean(dat), median=median(dat)) # mean/median of sample data
-        ret
-    }
 
     Analyse.slow <- function(condition, dat, fixed_objects) {
         Sys.sleep(1)
@@ -22,11 +33,7 @@ test_that('array', {
         ret
     }
 
-    Summarise <- function(condition, results, fixed_objects){
-        colMeans(results)
-    }
-
-    # time test across conditions
+     # time test across conditions
     expect_error(suppressWarnings(runSimulation(design=Design, replications=4, generate=Generate,
                   analyse=Analyse.slow, summarise=Summarise,
                   control = list(max_time = "00:00:06", max_RAM = "4GB"),
@@ -87,13 +94,15 @@ test_that('array', {
                      SimExtract(res_s2, what='results'))
     SimClean('serialseed-1.rds')
 
+})
+
+test_that('split array', {
+
+
+
     ########################
     # Same submission job as above, however split the replications over multiple
     # evaluations and combine when complete
-    Design5 <- expandDesign(Design, 5)
-
-    # iseed <- genSeeds()
-    iseed <- 554184288
 
     # arrayID <- getArrayID(type = 'slurm')
     arrayID <- 14L
@@ -125,15 +134,12 @@ test_that('array', {
                        generate=Generate, analyse=Analyse_big,
                        summarise=Summarise, iseed=iseed,
                        filename='mylongsim', arrayID=arrayID,
-                       control = list(max_RAM="150MB"), verbose=FALSE)
+                       control = list(max_RAM="500MB"), verbose=FALSE)
     res <- readRDS("mylongsim-14.rds")
     expect_true(res$REPLICATIONS == 1000L)
     SimClean('mylongsim-14.rds')
 
     ###
-    # emulate the arrayID distribution, storing all results in a 'sim/' folder
-    dir.create('sim/')
-
     # Emulate distribution to nrow(Design5) = 15 independent job arrays
     sapply(1:nrow(Design5), \(arrayID)
            runArraySimulation(design=Design5, replications=10,
@@ -169,7 +175,9 @@ test_that('array', {
     setwd('..')
     SimClean(dirs='sim/')
 
-    #####################
+})
+
+test_that('lists', {
 
     # list return
     Analyse_list <- function(condition, dat, fixed_objects) {
@@ -242,6 +250,7 @@ test_that('array', {
 
     setwd('sim')
     final <- SimCollect(files=dir())
+
     so <- summary(final)
     expect_equal(so$ncores, 15L)
     results <- SimResults(final)
@@ -252,5 +261,75 @@ test_that('array', {
     setwd('..')
     SimClean(dirs='sim/')
 
+
+
+    #############
+    # analyse returns a list
+    Analyse <- function(condition, dat, fixed_objects) {
+        ret <- list(mean=mean(dat), median=median(dat), stuff=rnorm(5))
+        ret
+    }
+
+    Summarise <- function(condition, results, fixed_objects){
+        means <- do.call(c, sapply(results, \(x) x['mean']))
+        medians <- do.call(c, sapply(results, \(x) x['median']))
+        c(means=mean(means), medians=mean(medians))
+    }
+
+    sapply(1:nrow(Design5), \(arrayID)
+           runArraySimulation(design=Design5, replications=10,
+                              generate=Generate, analyse=Analyse,
+                              summarise=Summarise, iseed=iseed, arrayID=arrayID,
+                              dirname='sim', filename='condition', verbose=FALSE)) |> invisible()
+
+    files <- dir('sim/')
+    expect_true(all(files %in% paste0('condition-', 1:nrow(Design5), '.rds')))
+
+    setwd('sim')
+    final <- SimCollect(files=dir())
+
+    so <- summary(final)
+    expect_equal(so$ncores, 15L)
+    results <- SimResults(final)
+
+    expect_equal(final$REPLICATIONS, c(50, 50, 50))
+    expect_equal(length(results), 150)
+
+    setwd('..')
+    SimClean(dirs='sim/')
+
 })
 
+
+test_that('parallel arrays export non-global user functions', {
+
+    library(SimDesign)
+
+    # functions here live in the test_that() frame, not .GlobalEnv; the
+    # parallel export must resolve them from the frames in which they were
+    # discovered rather than through the wrapper's lexical chain
+    Design <- createDesign(N = c(10, 20))
+    gen_helper <- function(N) rnorm(N)
+    Generate <- function(condition, fixed_objects) gen_helper(condition$N)
+    Analyse <- function(condition, dat, fixed_objects) c(mean = mean(dat))
+    Summarise <- function(condition, results, fixed_objects)
+        c(mu = mean(results[, "mean"]))
+
+    tmpdir <- tempfile()
+    dir.create(tmpdir)
+    owd <- setwd(tmpdir)
+    on.exit(setwd(owd), add = TRUE)
+    arr <- runArraySimulation(Design, replications = 2, generate = Generate,
+                              analyse = Analyse, summarise = Summarise,
+                              iseed = 1234, arrayID = 1, filename = 'arr',
+                              parallel = TRUE, ncores = 2, verbose = FALSE)
+    expect_true(is.finite(arr$mu))
+    SimClean(dir())
+
+})
+
+test_that('runArraySimulation progress default', {
+    # array jobs are timed and logged non-interactively, so the progress bar
+    # is disabled by default (see discussion in #101)
+    expect_false(formals(SimDesign::runArraySimulation)$progress)
+})
