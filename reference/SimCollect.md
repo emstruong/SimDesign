@@ -20,10 +20,12 @@ SimCollect(
   filename = NULL,
   simobj = NULL,
   select = NULL,
+  summarise = NULL,
   check.only = FALSE,
   target.reps = NULL,
-  warning_details = FALSE,
+  warning_details = TRUE,
   error_details = TRUE,
+  warn_mismatch = TRUE,
   gc = FALSE
 )
 
@@ -67,10 +69,17 @@ aggregate_simulations(...)
   a character vector indicating columns to variables to select from the
   `SimExtract(what='results')` information. This is mainly useful when
   RAM is an issue given simulations with many stored estimates. Default
-  includes the results objects in their entirety, though to omit all
-  internally stored simulation results pass the character `'NONE'`. To
-  investigate the stored warnings and error messages in isolation pass
-  `'WARNINGS'` or `'ERRORS'`, respectively
+  includes the results objects in their entirety, though to investigate
+  the stored warnings and error messages in isolation pass `'WARNINGS'`
+  or `'ERRORS'`, respectively
+
+- summarise:
+
+  an optional summarise function to apply to the read-in files. If not
+  specified the summarise function used in the original simulation will
+  be used. See
+  [`reSummarise`](http://philchalmers.github.io/SimDesign/reference/reSummarise.md)
+  for details.
 
 - check.only:
 
@@ -99,6 +108,11 @@ aggregate_simulations(...)
 
   logical; include the aggregate of the errors to be extracted via
   [`SimExtract`](http://philchalmers.github.io/SimDesign/reference/SimExtract.md)?
+
+- warn_mismatch:
+
+  logical; print warning information if package versions or R build
+  session/information mismatched?
 
 - gc:
 
@@ -226,8 +240,9 @@ SimCollect('sim_files/', check.only = TRUE, target.reps=1000)
 sim <- SimCollect('sim_files/')
 sim
 
-# view list of error messages (if there were any raised)
+# view list of error/warning messages (if there were any raised)
 SimCollect('sim_files/', select = 'ERRORS')
+SimCollect('sim_files/', select = 'WARNINGS')
 
 SimClean(dir='sim_files/')
 

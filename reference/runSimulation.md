@@ -57,7 +57,7 @@ runSimulation(
   control = list(),
   not_parallel = NULL,
   progress = TRUE,
-  verbose = interactive()
+  verbose
 )
 
 # S3 method for class 'SimDesign'
@@ -843,7 +843,8 @@ print(x, list2char = TRUE, ...)
   logical; print messages to the R console? Set to `TRUE` in interactive
   mode. On HPC clusters this is automatically set to `TRUE` so that
   progress can be tracked in locally stored files (e.g., in SLURM, the
-  `.out` files)
+  `.out` files), however can be set to `FALSE` to override default
+  behavior
 
 - object:
 
@@ -1170,9 +1171,9 @@ Final
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Tue Aug 11 23:39:49 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Tue Aug 11 23:39:49 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Tue Aug 11 23:39:49 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Sat Oct 24 18:49:09 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Sat Oct 24 18:49:09 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Sat Oct 24 18:49:09 20…
 (results <- SimResults(Final))
 #> # A tibble: 6 × 2
 #>       N  mean
@@ -1185,11 +1186,12 @@ Final
 #> 6    30  8.74
 results |> group_by(N) |> descript()
 #> # A tibble: 3 × 12
-#>       N     n  mean  trim    sd      skew  kurt   min   P25   P50   P75   max
-#>   <dbl> <dbl> <dbl> <dbl> <dbl>     <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-#> 1    10     2 10.2  10.2  1.47   0        -2.75  9.16  9.68 10.2   10.7  11.2
-#> 2    20     2 10.9  10.9  0.319  4.16e-15 -2.75 10.7  10.8  10.9   11.0  11.1
-#> 3    30     2  9.63  9.63 1.25  -1.10e-15 -2.75  8.74  9.18  9.63  10.1  10.5
+#>       N VARIABLE     n  mean  trim median    sd   IQR      skew  kurt   min
+#> * <dbl> <fct>    <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>     <dbl> <dbl> <dbl>
+#> 1    10 mean         2 10.2  10.2   10.2  1.47  1.04   0        -2.75  9.16
+#> 2    20 mean         2 10.9  10.9   10.9  0.319 0.225  4.16e-15 -2.75 10.7 
+#> 3    30 mean         2  9.63  9.63   9.63 1.25  0.887 -1.10e-15 -2.75  8.74
+#> # ℹ 1 more variable: max <dbl>
 
 # reproduce exact simulation
 Final_rep <- runSimulation(design=Design, replications=2, seed=Final$SEED,
@@ -1198,9 +1200,9 @@ Final_rep
 #> # A tibble: 3 × 7
 #>       N      mu      SE REPLICATIONS SIM_TIME       SEED COMPLETED              
 #>   <dbl>   <dbl>   <dbl>        <dbl> <chr>         <int> <chr>                  
-#> 1    10 10.202  1.4729             2 0.00s     533810122 Tue Aug 11 23:39:49 20…
-#> 2    20 10.885  0.31864            2 0.00s    1340659367 Tue Aug 11 23:39:49 20…
-#> 3    30  9.6268 1.2548             2 0.00s     881068069 Tue Aug 11 23:39:49 20…
+#> 1    10 10.202  1.4729             2 0.00s     533810122 Sat Oct 24 18:49:09 20…
+#> 2    20 10.885  0.31864            2 0.00s    1340659367 Sat Oct 24 18:49:09 20…
+#> 3    30  9.6268 1.2548             2 0.00s     881068069 Sat Oct 24 18:49:09 20…
 (results <- SimResults(Final_rep))
 #> # A tibble: 6 × 2
 #>       N  mean
@@ -1213,11 +1215,12 @@ Final_rep
 #> 6    30  8.74
 results |> group_by(N) |> descript()
 #> # A tibble: 3 × 12
-#>       N     n  mean  trim    sd      skew  kurt   min   P25   P50   P75   max
-#>   <dbl> <dbl> <dbl> <dbl> <dbl>     <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-#> 1    10     2 10.2  10.2  1.47   0        -2.75  9.16  9.68 10.2   10.7  11.2
-#> 2    20     2 10.9  10.9  0.319  4.16e-15 -2.75 10.7  10.8  10.9   11.0  11.1
-#> 3    30     2  9.63  9.63 1.25  -1.10e-15 -2.75  8.74  9.18  9.63  10.1  10.5
+#>       N VARIABLE     n  mean  trim median    sd   IQR      skew  kurt   min
+#> * <dbl> <fct>    <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>     <dbl> <dbl> <dbl>
+#> 1    10 mean         2 10.2  10.2   10.2  1.47  1.04   0        -2.75  9.16
+#> 2    20 mean         2 10.9  10.9   10.9  0.319 0.225  4.16e-15 -2.75 10.7 
+#> 3    30 mean         2  9.63  9.63   9.63 1.25  0.887 -1.10e-15 -2.75  8.74
+#> # ℹ 1 more variable: max <dbl>
 
 if (FALSE) { # \dontrun{
 # run with more standard number of replications
